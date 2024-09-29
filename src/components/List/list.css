@@ -1,0 +1,40 @@
+.player-columns {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .player-column {
+    width: 45%; /* Adjust the width to fit the two columns side by side */
+  }
+  
+  .pics-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .player-pic-container {
+    text-align: center;
+  }
+  
+  .column-title {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .gameweek {
+    text-align: center;
+  }
+
+  .total-points, .outcome {
+    text-align: center;
+  }
+
+  .player-pic {
+    width: 110px;
+    height: 140px;
+    object-fit: cover;
+  }
+  
+  
