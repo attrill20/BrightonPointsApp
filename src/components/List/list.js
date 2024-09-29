@@ -38,8 +38,9 @@ const List = ({ mainData, fixturesData, activeGameweek }) => {
 
     return (
       <div>
-          <p className="gameweek">Active GW: <strong>{activeGameweek}</strong></p>
           <p className="outcome"><strong>{calculateOutcome()}</strong></p>
+          <p className="gameweek">Active GW: <strong>{activeGameweek}</strong></p>
+    
           
           <div className="player-columns">
             <div className="player-column">
