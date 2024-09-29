@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import "./list.css";
 
 const List = ({ mainData, fixturesData, activeGameweek }) => {
@@ -20,8 +20,11 @@ const List = ({ mainData, fixturesData, activeGameweek }) => {
     const totalPointsJames = playersForJames.reduce((sum, player) => sum + player.event_points, 0);
     const totalPointsLaurie = playersForLaurie.reduce((sum, player) => sum + player.event_points, 0);
 
+    // State for the multiplier
+    const [multiplier, setMultiplier] = useState(2); // Default multiplier
+
     const calculateOutcome = () => {
-        const pointDifference = Math.abs(totalPointsJames - totalPointsLaurie) * 2;
+        const pointDifference = Math.abs(totalPointsJames - totalPointsLaurie) * multiplier;
         if (totalPointsJames > totalPointsLaurie) {
             return `Laurie pays James £${pointDifference}`;
         } else if (totalPointsLaurie > totalPointsJames) {
@@ -37,57 +40,67 @@ const List = ({ mainData, fixturesData, activeGameweek }) => {
     };
 
     return (
-      <div>
-          <p className="outcome"><strong>{calculateOutcome()}</strong></p>
-          <p className="gameweek">Active GW: <strong>{activeGameweek}</strong></p>
+        <div>
+            <p className="outcome"><strong>{calculateOutcome()}</strong></p>
+            <p className="gameweek">Active GW: <strong>{activeGameweek}</strong></p>
     
-          
-          <div className="player-columns">
-            <div className="player-column">
-              <p className="column-title"><strong>James Players</strong></p>
-              <p className="total-points">Total Points: <strong>{totalPointsJames}</strong></p>
-              {playersForJames.length > 0 ? (
-                <div className="pics-wrapper">
-                  {playersForJames.map((player, index) => (
-                    <div key={player.code} className="player-pic-container">
-                      <img
-                        className="player-pic"
-                        src={getPlayerImage(player.code)}
-                        onError={(e) => { e.target.src = "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png"; }}
-                        alt={`player-${index + 1}`}
-                      />
-                      <p className="player-stat-name">{player.web_name}: <strong>{player.event_points}</strong></p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p>No players found for James.</p>
-              )}
+            <div className="input-container">
+                <label htmlFor="multiplier">Points Multiplier (£): </label>
+                <input
+                    type="number"
+                    id="multiplier"
+                    value={multiplier}
+                    onChange={(e) => setMultiplier(Number(e.target.value))}
+                    min="0"
+                />
             </div>
 
-            <div className="player-column">
-              <p className="column-title"><strong>Laurie Players</strong></p>
-              <p className="total-points">Total Points: <strong>{totalPointsLaurie}</strong></p>
-              {playersForLaurie.length > 0 ? (
-                <div className="pics-wrapper">
-                  {playersForLaurie.map((player, index) => (
-                    <div key={player.code} className="player-pic-container">
-                      <img
-                        className="player-pic"
-                        src={getPlayerImage(player.code)}
-                        onError={(e) => { e.target.src = "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png"; }}
-                        alt={`player-${index + 1}`}
-                      />
-                     <p className="player-stat-name">{player.web_name}: <strong>{player.event_points}</strong></p>
-                    </div>
-                  ))}
+            <div className="player-columns">
+                <div className="player-column">
+                    <p className="column-title"><strong>James Players</strong></p>
+                    <p className="total-points">Total Points: <strong>{totalPointsJames}</strong></p>
+                    {playersForJames.length > 0 ? (
+                        <div className="pics-wrapper">
+                            {playersForJames.map((player, index) => (
+                                <div key={player.code} className="player-pic-container">
+                                    <img
+                                        className="player-pic"
+                                        src={getPlayerImage(player.code)}
+                                        onError={(e) => { e.target.src = "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png"; }}
+                                        alt={`player-${index + 1}`}
+                                    />
+                                    <p className="player-stat-name">{player.web_name}: <strong>{player.event_points}</strong></p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p>No players found for James.</p>
+                    )}
                 </div>
-              ) : (
-                <p>No players found for Laurie.</p>
-              )}
+
+                <div className="player-column">
+                    <p className="column-title"><strong>Laurie Players</strong></p>
+                    <p className="total-points">Total Points: <strong>{totalPointsLaurie}</strong></p>
+                    {playersForLaurie.length > 0 ? (
+                        <div className="pics-wrapper">
+                            {playersForLaurie.map((player, index) => (
+                                <div key={player.code} className="player-pic-container">
+                                    <img
+                                        className="player-pic"
+                                        src={getPlayerImage(player.code)}
+                                        onError={(e) => { e.target.src = "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png"; }}
+                                        alt={`player-${index + 1}`}
+                                    />
+                                    <p className="player-stat-name">{player.web_name}: <strong>{player.event_points}</strong></p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p>No players found for Laurie.</p>
+                    )}
+                </div>
             </div>
-          </div>
-      </div>
+        </div>
     );
 };
 

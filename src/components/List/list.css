@@ -63,3 +63,18 @@
     margin-top: 5px;
     margin-bottom: 5px;
 }
+
+.input-container {
+    display: flex; /* Use flexbox to align items horizontally */
+    justify-content: center; /* Center items horizontally */
+    align-items: center; /* Center items vertically */
+    margin: 20px 0; /* Add some space around the input */
+}
+
+#multiplier {
+    width: 40px; /* Set a specific width for the input field */
+    padding: 5px; /* Add some padding for better appearance */
+    text-align: center; /* Center the text inside the input */
+    margin-left: 10px; /* Space between the label and input */
+}
+
