@@ -27,26 +27,31 @@
 .column-title {
     font-size: 1.5rem;
     margin-bottom: 10px;
-    text-align: center; /* Center the column title */
+    text-align: center; 
 }
 
-.total-points, .outcome, .gameweek {
-    text-align: center; /* Center the text for total points and outcome */
+.total-points, .outcome {
+    text-align: center; 
     font-size: 1.5rem;
 }
 
+.gameweek, .input-container {
+    text-align: center; 
+    font-size: 1.2rem;
+}
+
 .player-pic {
-    width: 110px; /* Set the player image width */
-    height: 140px; /* Set the player image height */
-    object-fit: cover; /* Ensure the image fits within its box */
+    width: 110px;
+    height: 140px;
+    object-fit: cover; 
 }
 
 .player-stat-name {
-    margin-top: 5px; /* Add space above the name */
-    margin-bottom: 2px; /* Space below the name */
-    background: white; /* Background color for contrast */
-    width: 140px; /* Set the width to match the image */
-    text-align: center; /* Center the text */
+    margin-top: 5px; 
+    margin-bottom: 2px; 
+    background: white; 
+    width: 140px; 
+    text-align: center; 
 }
 
 .total-points {
@@ -65,16 +70,16 @@
 }
 
 .input-container {
-    display: flex; /* Use flexbox to align items horizontally */
-    justify-content: center; /* Center items horizontally */
-    align-items: center; /* Center items vertically */
-    margin: 20px 0; /* Add some space around the input */
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    margin: 5px 0;
 }
 
 #multiplier {
-    width: 40px; /* Set a specific width for the input field */
-    padding: 5px; /* Add some padding for better appearance */
-    text-align: center; /* Center the text inside the input */
-    margin-left: 10px; /* Space between the label and input */
+    width: 40px;
+    padding: 5px;
+    text-align: center;
+    margin-left: 5px; 
 }
 
