@@ -37,5 +37,20 @@
   .player-stat-name {
     margin-top: 0px;
   }
+
+  .total-points {
+    margin-top: 2px;
+    margin-bottom: 2px;
+  }
+
+  .column-title {
+    margin-top: 2px;
+    margin-bottom: 2px;
+  }
+
+  .gameweek, .outcome {
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
   
   
