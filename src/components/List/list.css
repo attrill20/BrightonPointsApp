@@ -1,57 +1,65 @@
 .player-columns {
     display: flex;
-    justify-content: space-between;
-  }
-  
-  .player-column {
+    justify-content: space-around; /* Space around columns for centering */
+}
+
+.player-column {
     width: 45%; /* Adjust the width to fit the two columns side by side */
-  }
-  
-  .pics-wrapper {
+    display: flex; /* Use flexbox for the player-column */
+    flex-direction: column; /* Stack elements vertically */
+    align-items: center; /* Center the content horizontally */
+}
+
+.pics-wrapper {
     display: flex;
     flex-direction: column;
     gap: 20px;
-  }
-  
-  .player-pic-container {
-    text-align: center;
-  }
-  
-  .column-title {
+    align-items: center; /* Center all player images and names */
+}
+
+.player-pic-container {
+    text-align: center; /* Center all content inside the container */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center content horizontally */
+}
+
+.column-title {
     font-size: 1.5rem;
     margin-bottom: 10px;
-    text-align: center;
-  }
+    text-align: center; /* Center the column title */
+}
 
-  .total-points, .outcome, .gameweek {
-    text-align: center;
+.total-points, .outcome, .gameweek {
+    text-align: center; /* Center the text for total points and outcome */
     font-size: 1.5rem;
-  }
+}
 
-  .player-pic {
-    width: 110px;
-    height: 140px;
-    object-fit: cover;
-  }
+.player-pic {
+    width: 110px; /* Set the player image width */
+    height: 140px; /* Set the player image height */
+    object-fit: cover; /* Ensure the image fits within its box */
+}
 
-  .player-stat-name {
-    margin-top: 0px;
-    margin-bottom: 2px;
-  }
+.player-stat-name {
+    margin-top: 5px; /* Add space above the name */
+    margin-bottom: 2px; /* Space below the name */
+    background: white; /* Background color for contrast */
+    width: 140px; /* Set the width to match the image */
+    text-align: center; /* Center the text */
+}
 
-  .total-points {
+.total-points {
     margin-top: 2px;
     margin-bottom: 2px;
-  }
+}
 
-  .column-title {
+.column-title {
     margin-top: 2px;
     margin-bottom: 2px;
-  }
+}
 
-  .gameweek, .outcome {
+.gameweek, .outcome {
     margin-top: 5px;
     margin-bottom: 5px;
-  }
-  
-  
+}
