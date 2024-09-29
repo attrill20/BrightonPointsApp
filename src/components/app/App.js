@@ -39,15 +39,17 @@ export default function App() {
     fetchFPL();
   }, []);
 
+  // Determine the background image based on screen size
+  const isMobile = window.matchMedia("(max-width: 768px)").matches; // Adjust the max-width as needed
   const appStyle = {
-    backgroundImage: "url('/seagulls.jpg')",
+    backgroundImage: `url('${isMobile ? "/brighton_pitch.jpg" : "/seagulls.jpg"}')`,
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
-    backgroundAttachment: "fixed", // Keep the image fixed in place
     height: "100vh",
     width: "100%",
-    overflow: "auto", // Enables scrolling
+    position: "relative",
+    overflow: "auto",
   };
 
   return (
