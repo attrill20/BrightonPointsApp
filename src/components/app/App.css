@@ -1,0 +1,11 @@
+body {
+  font-family: 'Anton', cursive; /* Fallback to cursive if Righteous is unavailable */
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Anton', cursive; /* Apply to headings */
+}
+
+p {
+  font-family: 'Anton', cursive; /* Apply to paragraphs */
+}

@@ -43,7 +43,7 @@ const List = ({ mainData, fixturesData, activeGameweek }) => {
           
           <div className="player-columns">
             <div className="player-column">
-              <p className="column-title">James Players</p>
+              <p className="column-title"><strong>James Players</strong></p>
               <p className="total-points">Total Points: <strong>{totalPointsJames}</strong></p>
               {playersForJames.length > 0 ? (
                 <div className="pics-wrapper">
@@ -65,7 +65,7 @@ const List = ({ mainData, fixturesData, activeGameweek }) => {
             </div>
 
             <div className="player-column">
-              <p className="column-title">Laurie Players</p>
+              <p className="column-title"><strong>Laurie Players</strong></p>
               <p className="total-points">Total Points: <strong>{totalPointsLaurie}</strong></p>
               {playersForLaurie.length > 0 ? (
                 <div className="pics-wrapper">

@@ -39,7 +39,6 @@ export default function App() {
     fetchFPL();
   }, []);
 
-  // Determine the background image based on screen size
   const isMobile = window.matchMedia("(max-width: 768px)").matches; // Adjust the max-width as needed
   const appStyle = {
     backgroundImage: `url('${isMobile ? "/seagulls_mobile.png" : "/seagulls.jpg"}')`,

@@ -33,5 +33,9 @@
     height: 140px;
     object-fit: cover;
   }
+
+  .player-stat-name {
+    margin-top: 0px;
+  }
   
   
