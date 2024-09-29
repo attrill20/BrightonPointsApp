@@ -38,8 +38,8 @@ const List = ({ mainData, fixturesData, activeGameweek }) => {
 
     return (
       <div>
-          <p className="gameweek">Active GW: {activeGameweek}</p>
-          <p className="outcome">{calculateOutcome()}</p>
+          <p className="gameweek">Active GW: <strong>{activeGameweek}</strong></p>
+          <p className="outcome"><strong>{calculateOutcome()}</strong></p>
           
           <div className="player-columns">
             <div className="player-column">
@@ -55,8 +55,7 @@ const List = ({ mainData, fixturesData, activeGameweek }) => {
                         onError={(e) => { e.target.src = "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png"; }}
                         alt={`player-${index + 1}`}
                       />
-                      <p className="player-stat-name">Name: <strong>{player.web_name}</strong></p>
-                      <p className="player-stat">Points: <strong>{player.event_points}</strong></p>
+                      <p className="player-stat-name">{player.web_name}: <strong>{player.event_points}</strong></p>
                     </div>
                   ))}
                 </div>
@@ -78,8 +77,7 @@ const List = ({ mainData, fixturesData, activeGameweek }) => {
                         onError={(e) => { e.target.src = "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png"; }}
                         alt={`player-${index + 1}`}
                       />
-                      <p className="player-stat-name">Name: <strong>{player.web_name}</strong></p>
-                      <p className="player-stat">Points: <strong>{player.event_points}</strong></p>
+                     <p className="player-stat-name">{player.web_name}: <strong>{player.event_points}</strong></p>
                     </div>
                   ))}
                 </div>

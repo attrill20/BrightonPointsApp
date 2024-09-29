@@ -23,12 +23,9 @@
     text-align: center;
   }
 
-  .gameweek {
+  .total-points, .outcome, .gameweek {
     text-align: center;
-  }
-
-  .total-points, .outcome {
-    text-align: center;
+    font-size: 1.5rem;
   }
 
   .player-pic {
