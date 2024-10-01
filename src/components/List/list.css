@@ -1,6 +1,7 @@
 .player-columns {
     display: flex;
     justify-content: space-around; /* Space around columns for centering */
+    margin-bottom: 30px;
 }
 
 .player-column {
@@ -76,7 +77,7 @@
     margin: 5px 0;
 }
 
-#multiplier {
+#multiplier, #gameweek {
     width: 40px;
     padding: 5px;
     text-align: center;
