@@ -24,21 +24,21 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange }) 
     // Fetch gameweek data based on selectedGameweek
     useEffect(() => {
         const fetchGameweekData = async () => {
-            try {
-                const response = await fetch(`https://fpl-server-nine.vercel.app/api?endpoint=event/${selectedGameweek}/live/`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+            if (selectedGameweek) {
+                try {
+                    const response = await fetch(`https://fpl-server-nine.vercel.app/api?endpoint=event/${selectedGameweek}/live/`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    const gameweekStats = await response.json();
+                    setGameweekData(gameweekStats);
+                } catch (error) {
+                    console.error("Failed to fetch gameweek data:", error);
                 }
-                const gameweekStats = await response.json();
-                setGameweekData(gameweekStats);
-            } catch (error) {
-                console.error("Failed to fetch gameweek data:", error);
             }
         };
 
-        if (selectedGameweek) {
-            fetchGameweekData();
-        }
+        fetchGameweekData();
     }, [selectedGameweek]);
 
     const getPlayerPoints = (playerId) => {
@@ -56,9 +56,30 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange }) 
     };
 
     const handleGameweekInputChange = (e) => {
-        const value = Number(e.target.value);
-        if (value >= 1 && value <= 38) {
-            onGameweekChange(e); // Call the parent handler to set the gameweek
+        const value = e.target.value;
+
+        // Allow empty input
+        if (value === "") {
+            onGameweekChange(e); // Call the parent handler to set selectedGameweek to null
+        } else {
+            const numberValue = Number(value);
+            if (numberValue >= 1 && numberValue <= 38) {
+                onGameweekChange(e); // Call the parent handler to set the gameweek
+            }
+        }
+    };
+
+    const handleMultiplierChange = (e) => {
+        const value = e.target.value;
+
+        // Allow empty input
+        if (value === "") {
+            setMultiplier(null);
+        } else {
+            const numberValue = Number(value);
+            if (numberValue > 0) {
+                setMultiplier(numberValue);
+            }
         }
     };
 
@@ -79,7 +100,6 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange }) 
     return (
         <div>
             <p className="outcome"><strong>{calculateOutcome()}</strong></p>
-            {/* <p className="gameweek">Active GW: <strong>{activeGameweek}</strong></p> */}
             
             <div className="input-container">
                 <label htmlFor="gameweek">Current Gameweek: </label>
@@ -88,7 +108,7 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange }) 
                     type="number"
                     min="1"
                     max="38"
-                    value={selectedGameweek || activeGameweek}
+                    value={selectedGameweek !== null ? selectedGameweek : ""}
                     onChange={handleGameweekInputChange}
                 />
             </div>
@@ -96,10 +116,10 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange }) 
             <div className="input-container">
                 <label htmlFor="multiplier">Points Multiplier (£): </label>
                 <input
-                    type="number"
                     id="multiplier"
-                    value={multiplier}
-                    onChange={(e) => setMultiplier(Number(e.target.value))}
+                    type="number"
+                    value={multiplier !== null ? multiplier : ""}
+                    onChange={handleMultiplierChange}
                     min="0"
                 />
             </div>

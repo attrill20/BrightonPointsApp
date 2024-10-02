@@ -69,7 +69,17 @@ export default function App() {
   }, [selectedGameweek]);
 
   const handleGameweekChange = (e) => {
-    setSelectedGameweek(Number(e.target.value));
+    const value = e.target.value;
+
+    // Check for empty input
+    if (value === "") {
+      setSelectedGameweek(null); // Allow empty input
+    } else {
+      const numberValue = Number(value);
+      if (numberValue >= 1 && numberValue <= 38) {
+        setSelectedGameweek(numberValue); // Set valid gameweek
+      }
+    }
   };
 
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
