@@ -172,7 +172,7 @@ const playersForLaurie = brightonPlayers
                             ))}
                         </div>
                     ) : (
-                        <p>No players found for James.</p>
+                        <p>No players found for James</p>
                     )}
                 </div>
 
@@ -194,7 +194,7 @@ const playersForLaurie = brightonPlayers
                             ))}
                         </div>
                     ) : (
-                        <p>No players found for Laurie.</p>
+                        <p>No players found for Laurie</p>
                     )}
                 </div>
             </div>
