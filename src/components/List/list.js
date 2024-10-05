@@ -12,18 +12,41 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
     const elements = mainData?.elements || [];
     const [gameweekData, setGameweekData] = useState(null);
 
-    const normalizedJamesPlayerNames = jamesPlayerNames.map(name => normalizeString(name));
-    const normalizedLauriePlayerNames = lauriePlayerNames.map(name => normalizeString(name));
-
     const brightonPlayers = elements.filter(player => player.team === 5);
 
     const playersForJames = brightonPlayers
-        .filter(player => normalizedJamesPlayerNames.includes(normalizeString(player.web_name)))
-        .sort((a, b) => normalizedJamesPlayerNames.indexOf(normalizeString(a.web_name)) - normalizedJamesPlayerNames.indexOf(normalizeString(b.web_name)));
+    .filter(player => {
+        const matchedPlayer = jamesPlayerNames.find(jamesPlayer => 
+            normalizeString(jamesPlayer.name) === normalizeString(player.web_name)
+        );
+        return matchedPlayer && selectedGameweek >= matchedPlayer.startingGameweek; // Check if the selected gameweek is after the starting gameweek
+    })
+    .sort((a, b) => {
+        const aIndex = jamesPlayerNames.findIndex(jamesPlayer => 
+            normalizeString(jamesPlayer.name) === normalizeString(a.web_name)
+        );
+        const bIndex = jamesPlayerNames.findIndex(jamesPlayer => 
+            normalizeString(jamesPlayer.name) === normalizeString(b.web_name)
+        );
+        return aIndex - bIndex;
+    });
 
-    const playersForLaurie = brightonPlayers
-        .filter(player => normalizedLauriePlayerNames.includes(normalizeString(player.web_name)))
-        .sort((a, b) => normalizedLauriePlayerNames.indexOf(normalizeString(a.web_name)) - normalizedLauriePlayerNames.indexOf(normalizeString(b.web_name)));
+const playersForLaurie = brightonPlayers
+    .filter(player => {
+        const matchedPlayer = lauriePlayerNames.find(lauriePlayer => 
+            normalizeString(lauriePlayer.name) === normalizeString(player.web_name)
+        );
+        return matchedPlayer && selectedGameweek >= matchedPlayer.startingGameweek; // Check if the selected gameweek is after the starting gameweek
+    })
+    .sort((a, b) => {
+        const aIndex = lauriePlayerNames.findIndex(lauriePlayer => 
+            normalizeString(lauriePlayer.name) === normalizeString(a.web_name)
+        );
+        const bIndex = lauriePlayerNames.findIndex(lauriePlayer => 
+            normalizeString(lauriePlayer.name) === normalizeString(b.web_name)
+        );
+        return aIndex - bIndex;
+    });
 
     const [multiplier, setMultiplier] = useState(2);
 

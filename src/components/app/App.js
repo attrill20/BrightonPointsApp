@@ -99,42 +99,42 @@ export default function App() {
 
   const fetchDataFromGoogleSheets = async () => {
     try {
-      const spreadsheetId = process.env.REACT_APP_SPREADSHEET_ID;
-      const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
-      const sheetName = process.env.REACT_APP_SHEET_NAME;
+        const spreadsheetId = process.env.REACT_APP_SPREADSHEET_ID;
+        const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
+        const sheetName = process.env.REACT_APP_SHEET_NAME;
   
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}?key=${apiKey}`;
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}?key=${apiKey}`;
   
-      const response = await axios.get(url);
-      const data = response.data.values;
+        const response = await axios.get(url);
+        const data = response.data.values;
   
-      const jamesPlayerNames = [];
-      const lauriePlayerNames = [];
+        const jamesPlayerNames = [];
+        const lauriePlayerNames = [];
   
-      for (let i = 3; i < data.length; i++) {
-        const jamesPlayer = data[i][2]; 
-        const lauriePlayer = data[i][3]; 
+        for (let i = 3; i < data.length; i++) {
+            const jamesPlayer = data[i][2]; 
+            const lauriePlayer = data[i][3];
+            const startingGameweek = data[i][1]; 
   
-        if (jamesPlayer) {
-          jamesPlayerNames.push(jamesPlayer.trim());
+            if (jamesPlayer) {
+                jamesPlayerNames.push({ name: jamesPlayer.trim(), startingGameweek: Number(startingGameweek) });
+            }
+            if (lauriePlayer) {
+                lauriePlayerNames.push({ name: lauriePlayer.trim(), startingGameweek: Number(startingGameweek) });
+            }
         }
-        if (lauriePlayer) {
-          lauriePlayerNames.push(lauriePlayer.trim());
-        }
-      }
   
-      setJamesPlayerNames(jamesPlayerNames);
-      setLauriePlayerNames(lauriePlayerNames);
+        setJamesPlayerNames(jamesPlayerNames);
+        setLauriePlayerNames(lauriePlayerNames);
   
     } catch (error) {
-      console.error('Error fetching data from Google Sheets:', error);
+        console.error('Error fetching data from Google Sheets:', error);
     }
-  };
+};
   
   useEffect(() => {
     fetchDataFromGoogleSheets();
   }, [mainData]);
-  
 
   return (
     <div className="app" style={appStyle}>
