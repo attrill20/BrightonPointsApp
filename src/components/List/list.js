@@ -1,25 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import "./list.css";
 
-const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange }) => {
+const normalizeString = (str) => {
+    return str
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+};
+
+const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames }) => {
     const elements = mainData?.elements || [];
     const [gameweekData, setGameweekData] = useState(null);
-    
-    const jamesPlayerNames = ["Adingra", "O'Riley", "Verbruggen", "Minteh", "Enciso", "Estupiñan"];
-    const lauriePlayerNames = ["João Pedro", "Mitoma", "Baleba", "Van Hecke", "Georginio", "Ferguson"];
+
+    const normalizedJamesPlayerNames = jamesPlayerNames.map(name => normalizeString(name));
+    const normalizedLauriePlayerNames = lauriePlayerNames.map(name => normalizeString(name));
 
     const brightonPlayers = elements.filter(player => player.team === 5);
 
     const playersForJames = brightonPlayers
-        .filter(player => jamesPlayerNames.includes(player.web_name))
-        .sort((a, b) => jamesPlayerNames.indexOf(a.web_name) - jamesPlayerNames.indexOf(b.web_name));
+        .filter(player => normalizedJamesPlayerNames.includes(normalizeString(player.web_name)))
+        .sort((a, b) => normalizedJamesPlayerNames.indexOf(normalizeString(a.web_name)) - normalizedJamesPlayerNames.indexOf(normalizeString(b.web_name)));
 
     const playersForLaurie = brightonPlayers
-        .filter(player => lauriePlayerNames.includes(player.web_name))
-        .sort((a, b) => lauriePlayerNames.indexOf(a.web_name) - lauriePlayerNames.indexOf(b.web_name));
+        .filter(player => normalizedLauriePlayerNames.includes(normalizeString(player.web_name)))
+        .sort((a, b) => normalizedLauriePlayerNames.indexOf(normalizeString(a.web_name)) - normalizedLauriePlayerNames.indexOf(normalizeString(b.web_name)));
 
-    // State for the multiplier
-    const [multiplier, setMultiplier] = useState(2); // Default multiplier
+    const [multiplier, setMultiplier] = useState(2);
 
     // Fetch gameweek data based on selectedGameweek
     useEffect(() => {
@@ -44,15 +50,15 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange }) 
     const getPlayerPoints = (playerId) => {
         if (selectedGameweek === activeGameweek) {
             const player = elements.find(player => player.id === playerId);
-            return player ? player.event_points : 0; // Current event points
+            return player ? player.event_points : 0; 
         }
 
         if (gameweekData) {
             const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.total_points : 0; // Total points for the selected GW
+            return playerStats ? playerStats.stats.total_points : 0;
         }
 
-        return 0; // Default to 0 if no data available
+        return 0;
     };
 
     const handleGameweekInputChange = (e) => {

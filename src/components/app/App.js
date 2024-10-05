@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import List from "../List/list";
+import axios from 'axios';
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -9,6 +10,8 @@ export default function App() {
   const [activeGameweek, setActiveGameweek] = useState(null);
   const [playerHistory, setPlayerHistory] = useState({});
   const [selectedGameweek, setSelectedGameweek] = useState(null);
+  const [jamesPlayerNames, setJamesPlayerNames] = useState([]);
+  const [lauriePlayerNames, setLauriePlayerNames] = useState([]);
 
   useEffect(() => {
     async function fetchFPL() {
@@ -94,6 +97,45 @@ export default function App() {
     overflow: "auto",
   };
 
+  const fetchDataFromGoogleSheets = async () => {
+    try {
+      const spreadsheetId = process.env.REACT_APP_SPREADSHEET_ID;
+      const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
+      const sheetName = process.env.REACT_APP_SHEET_NAME;
+  
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}?key=${apiKey}`;
+  
+      const response = await axios.get(url);
+      const data = response.data.values;
+  
+      const jamesPlayerNames = [];
+      const lauriePlayerNames = [];
+  
+      for (let i = 3; i < data.length; i++) {
+        const jamesPlayer = data[i][2]; 
+        const lauriePlayer = data[i][3]; 
+  
+        if (jamesPlayer) {
+          jamesPlayerNames.push(jamesPlayer.trim());
+        }
+        if (lauriePlayer) {
+          lauriePlayerNames.push(lauriePlayer.trim());
+        }
+      }
+  
+      setJamesPlayerNames(jamesPlayerNames);
+      setLauriePlayerNames(lauriePlayerNames);
+  
+    } catch (error) {
+      console.error('Error fetching data from Google Sheets:', error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchDataFromGoogleSheets();
+  }, [mainData]);
+  
+
   return (
     <div className="app" style={appStyle}>
       <List
@@ -103,6 +145,8 @@ export default function App() {
         playerHistory={playerHistory}
         selectedGameweek={selectedGameweek}
         onGameweekChange={handleGameweekChange}
+        jamesPlayerNames={jamesPlayerNames}
+        lauriePlayerNames={lauriePlayerNames}
       />
     </div>
   );
