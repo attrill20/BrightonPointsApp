@@ -77,10 +77,29 @@
     margin: 5px 0;
 }
 
-#multiplier, #gameweek {
+#gameweek, #multiplier {
     width: 40px;
     padding: 5px;
     text-align: center;
     margin-left: 5px; 
+    -webkit-appearance: number-input;
+    appearance: number-input;  
 }
 
+#gameweek::-webkit-inner-spin-button,
+#gameweek::-webkit-outer-spin-button,
+#multiplier::-webkit-inner-spin-button,
+#multiplier::-webkit-outer-spin-button {
+    -webkit-appearance: inner-spin-button;
+    opacity: 1; 
+}
+
+#gameweek, #multiplier {
+    -moz-appearance: textfield; 
+}
+
+@media (pointer: coarse) {
+    #gameweek, #multiplier {
+        -webkit-appearance: textfield;
+    }
+}
