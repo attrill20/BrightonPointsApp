@@ -166,7 +166,7 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
             </div>
 
             <div className="input-container">
-                <label htmlFor="multiplier">Points Multiplier (£): </label>
+                <label htmlFor="multiplier">Points Multiplier(£): </label>
                 <div className="input-wrapper">
                     <button className="minus-button" onClick={handleMultiplierDecrement}> - </button>
                     <input
