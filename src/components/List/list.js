@@ -113,12 +113,23 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
     };
 
     const handleIncrement = (setter, value, max = 38) => {
-        setter(Math.min(value + 1, max));
+        const newValue = Math.min(value + 1, max);
+        setter({ target: { value: newValue } });
     };
     
     const handleDecrement = (setter, value, min = 1) => {
-        setter(Math.max(value - 1, min));
+        const newValue = Math.max(value - 1, min);
+        setter({ target: { value: newValue } });
     };
+
+    const handleMultiplierIncrement = () => {
+        setMultiplier((prevMultiplier) => Math.min(prevMultiplier + 1, 10));
+    };
+    
+    const handleMultiplierDecrement = () => {
+        setMultiplier((prevMultiplier) => Math.max(prevMultiplier - 1, 0));
+    };
+    
 
     const totalPointsJames = playersForJames.reduce((sum, player) => sum + getPlayerPoints(player.id), 0);
     const totalPointsLaurie = playersForLaurie.reduce((sum, player) => sum + getPlayerPoints(player.id), 0);
@@ -157,7 +168,7 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
             <div className="input-container">
                 <label htmlFor="multiplier">Points Multiplier (£): </label>
                 <div className="input-wrapper">
-                    <button className="minus-button" onClick={() => handleDecrement(setMultiplier, multiplier, 0)}> - </button>
+                    <button className="minus-button" onClick={handleMultiplierDecrement}> - </button>
                     <input
                         id="multiplier"
                         type="number"
@@ -165,9 +176,10 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
                         value={multiplier !== null ? multiplier : ""}
                         onChange={handleMultiplierChange}
                     />
-                    <button className="plus-button" onClick={() => handleIncrement(setMultiplier, multiplier)}> + </button>
+                    <button className="plus-button" onClick={handleMultiplierIncrement}> + </button>
                 </div>
             </div>
+
 
             <div className="player-columns">
                 <div className="player-column">
