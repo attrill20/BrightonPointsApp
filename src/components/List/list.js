@@ -31,12 +31,12 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
         return aIndex - bIndex;
     });
 
-const playersForLaurie = brightonPlayers
+    const playersForLaurie = brightonPlayers
     .filter(player => {
         const matchedPlayer = lauriePlayerNames.find(lauriePlayer => 
             normalizeString(lauriePlayer.name) === normalizeString(player.web_name)
         );
-        return matchedPlayer && selectedGameweek >= matchedPlayer.startingGameweek; // Check if the selected gameweek is after the starting gameweek
+        return matchedPlayer && selectedGameweek >= matchedPlayer.startingGameweek;
     })
     .sort((a, b) => {
         const aIndex = lauriePlayerNames.findIndex(lauriePlayer => 
@@ -89,11 +89,11 @@ const playersForLaurie = brightonPlayers
 
         // Allow empty input
         if (value === "") {
-            onGameweekChange(e); // Call the parent handler to set selectedGameweek to null
+            onGameweekChange(e);
         } else {
             const numberValue = Number(value);
             if (numberValue >= 1 && numberValue <= 38) {
-                onGameweekChange(e); // Call the parent handler to set the gameweek
+                onGameweekChange(e);
             }
         }
     };
@@ -112,6 +112,14 @@ const playersForLaurie = brightonPlayers
         }
     };
 
+    const handleIncrement = (setter, value, max = 38) => {
+        setter(Math.min(value + 1, max));
+    };
+    
+    const handleDecrement = (setter, value, min = 1) => {
+        setter(Math.max(value - 1, min));
+    };
+
     const totalPointsJames = playersForJames.reduce((sum, player) => sum + getPlayerPoints(player.id), 0);
     const totalPointsLaurie = playersForLaurie.reduce((sum, player) => sum + getPlayerPoints(player.id), 0);
 
@@ -122,7 +130,7 @@ const playersForLaurie = brightonPlayers
         } else if (totalPointsLaurie > totalPointsJames) {
             return `James pays Laurie £${pointDifference}`;
         } else {
-            return "It's a draw";
+            return "It's a draw!";
         }
     };
 
@@ -132,25 +140,33 @@ const playersForLaurie = brightonPlayers
             
             <div className="input-container">
                 <label htmlFor="gameweek">Current Gameweek: </label>
-                <input
-                    id="gameweek"
-                    type="number"
-                    min="1"
-                    max="38"
-                    value={selectedGameweek !== null ? selectedGameweek : ""}
-                    onChange={handleGameweekInputChange}
-                />
+                <div className="input-wrapper">
+                    <button className="minus-button" onClick={() => handleDecrement(onGameweekChange, selectedGameweek)}> - </button>
+                    <input
+                        id="gameweek"
+                        type="number"
+                        min="1"
+                        max="38"
+                        value={selectedGameweek !== null ? selectedGameweek : ""}
+                        onChange={handleGameweekInputChange}
+                    />
+                    <button className="plus-button" onClick={() => handleIncrement(onGameweekChange, selectedGameweek)}> + </button>
+                </div>
             </div>
 
             <div className="input-container">
                 <label htmlFor="multiplier">Points Multiplier (£): </label>
-                <input
-                    id="multiplier"
-                    type="number"
-                    value={multiplier !== null ? multiplier : ""}
-                    onChange={handleMultiplierChange}
-                    min="0"
-                />
+                <div className="input-wrapper">
+                    <button className="minus-button" onClick={() => handleDecrement(setMultiplier, multiplier, 0)}> - </button>
+                    <input
+                        id="multiplier"
+                        type="number"
+                        min="0"
+                        value={multiplier !== null ? multiplier : ""}
+                        onChange={handleMultiplierChange}
+                    />
+                    <button className="plus-button" onClick={() => handleIncrement(setMultiplier, multiplier)}> + </button>
+                </div>
             </div>
 
             <div className="player-columns">
