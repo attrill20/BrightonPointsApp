@@ -1,28 +1,27 @@
 .player-columns {
     display: flex;
-    justify-content: space-around; /* Space around columns for centering */
+    justify-content: space-around;
     margin-bottom: 30px;
 }
 
 .player-column {
-    width: 45%; /* Adjust the width to fit the two columns side by side */
-    display: flex; /* Use flexbox for the player-column */
-    flex-direction: column; /* Stack elements vertically */
-    align-items: center; /* Center the content horizontally */
+    width: 45%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .pics-wrapper {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    align-items: center; /* Center all player images and names */
+    align-items: center;
 }
 
 .player-pic-container {
-    text-align: center; /* Center all content inside the container */
-    display: flex;
+    text-align: center;
     flex-direction: column;
-    align-items: center; /* Center content horizontally */
+    align-items: center; 
 }
 
 .column-title {
@@ -47,12 +46,16 @@
     object-fit: cover; 
 }
 
-.player-stat-name {
+.player-stat-name, .player-stat-box {
     margin-top: 5px; 
     margin-bottom: 2px; 
     background: white; 
     width: 140px; 
     text-align: center; 
+}
+
+.player-stat-box p {
+    margin: 2px;
 }
 
 .total-points {
