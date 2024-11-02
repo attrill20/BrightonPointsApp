@@ -11,6 +11,7 @@ const normalizeString = (str) => {
 const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames }) => {
     const elements = mainData?.elements || [];
     const [gameweekData, setGameweekData] = useState(null);
+    const [selectedPlayer, setSelectedPlayer] = useState(null);
 
     const brightonPlayers = elements.filter(player => player.team === 5);
 
@@ -399,6 +400,10 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
         }
     };
 
+    const handlePlayerClick = (playerId) => {
+        setSelectedPlayer(selectedPlayer === playerId ? null : playerId);
+    };
+
     const PlayerColumn = ({ title, players, totalPoints, getPlayerPoints, getPlayerMinutes, getMinutesPoints, getPlayerGoals, getGoalsPoints, getPlayerAssists, getAssistsPoints }) => (
         <div className="player-column">
             <p className="column-title"><strong>{title} Players</strong></p>
@@ -415,44 +420,48 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
                                     e.target.className = "fallback-pic"; // Add a different class for the fallback image
                                 }}
                                 alt={`player-${index + 1}`}
+                                onClick={() => handlePlayerClick(player.id)}
                             />
                             <p className="player-stat-name">{player.web_name}: <strong>{getPlayerPoints(player.id)}</strong></p>
-                            <p className="player-stat-box">
-                                <p>Minutes: {getPlayerMinutes(player.id)} <strong>[{getMinutesPoints(player.id)}]</strong></p>
-                                {getPlayerGoals(player.id) !== 0 && (
-                                    <p>Goals: {getPlayerGoals(player.id)} <strong>[{getGoalsPoints(player.id)}]</strong></p>
-                                )}
-                                {getPlayerAssists(player.id) !== 0 && (
-                                    <p>Assists: {getPlayerAssists(player.id)} <strong>[{getAssistsPoints(player.id)}]</strong></p>
-                                )}
-                                {getCleanSheetPoints(player.id) !== 0 && (
-                                    <p>Clean Sheets: {getPlayerCleanSheets(player.id)} <strong>[{getCleanSheetPoints(player.id)}]</strong></p>
-                                )}
-                                {getPlayerPenaltySaves(player.id) !== 0 && (
-                                    <p>Penalty Saves: {getPlayerPenaltySaves(player.id)} <strong>[{getPenaltySavesPoints(player.id)}]</strong></p>
-                                )}
-                                {getPlayerSaves(player.id) !== 0 && (
-                                    <p>Saves: {getPlayerSaves(player.id)} <strong>[{getSavesPoints(player.id)}]</strong></p>
-                                )}
-                                {getGoalsConcededPoints(player.id) !== 0 && (
-                                    <p>Conceded: {getPlayerGoalsConceded(player.id)} <strong>[{getGoalsConcededPoints(player.id)}]</strong></p>
-                                )}
-                                {getPlayerOwnGoals(player.id) !== 0 && (
-                                    <p>Own Goals: {getPlayerOwnGoals(player.id)} <strong>[{getOwnGoalsPoints(player.id)}]</strong></p>
-                                )}
-                                {getPlayerPenaltiesMissed(player.id) !== 0 && (
-                                    <p>Penalties Missed: {getPlayerPenaltiesMissed(player.id)} <strong>[{getPenaltiesMissedPoints(player.id)}]</strong></p>
-                                )}
-                                {getPlayerYellowCards(player.id) !== 0 && (
-                                    <p>Yellow Cards: {getPlayerYellowCards(player.id)} <strong>[{getYellowCardsPoints(player.id)}]</strong></p>
-                                )}
-                                {getPlayerRedCards(player.id) !== 0 && (
-                                    <p>Red Cards: {getPlayerRedCards(player.id)} <strong>[{getRedCardsPoints(player.id)}]</strong></p>
-                                )}
-                                {getPlayerBPS(player.id) !== 0 && (
-                                    <p>BPS: {getPlayerBPS(player.id)} <strong>[{getBonusPoints(player.id)}]</strong></p>
-                                )}
-                            </p>
+                            
+                            {selectedPlayer === player.id && (
+                                <p className="player-stat-box">
+                                    <p>Minutes: {getPlayerMinutes(player.id)} <strong>[{getMinutesPoints(player.id)}]</strong></p>
+                                    {getPlayerGoals(player.id) !== 0 && (
+                                        <p>Goals: {getPlayerGoals(player.id)} <strong>[{getGoalsPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getPlayerAssists(player.id) !== 0 && (
+                                        <p>Assists: {getPlayerAssists(player.id)} <strong>[{getAssistsPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getCleanSheetPoints(player.id) !== 0 && (
+                                        <p>Clean Sheets: {getPlayerCleanSheets(player.id)} <strong>[{getCleanSheetPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getPlayerPenaltySaves(player.id) !== 0 && (
+                                        <p>Penalty Saves: {getPlayerPenaltySaves(player.id)} <strong>[{getPenaltySavesPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getPlayerSaves(player.id) !== 0 && (
+                                        <p>Saves: {getPlayerSaves(player.id)} <strong>[{getSavesPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getGoalsConcededPoints(player.id) !== 0 && (
+                                        <p>Conceded: {getPlayerGoalsConceded(player.id)} <strong>[{getGoalsConcededPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getPlayerOwnGoals(player.id) !== 0 && (
+                                        <p>Own Goals: {getPlayerOwnGoals(player.id)} <strong>[{getOwnGoalsPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getPlayerPenaltiesMissed(player.id) !== 0 && (
+                                        <p>Penalties Missed: {getPlayerPenaltiesMissed(player.id)} <strong>[{getPenaltiesMissedPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getPlayerYellowCards(player.id) !== 0 && (
+                                        <p>Yellow Cards: {getPlayerYellowCards(player.id)} <strong>[{getYellowCardsPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getPlayerRedCards(player.id) !== 0 && (
+                                        <p>Red Cards: {getPlayerRedCards(player.id)} <strong>[{getRedCardsPoints(player.id)}]</strong></p>
+                                    )}
+                                    {getPlayerBPS(player.id) !== 0 && (
+                                        <p>BPS: {getPlayerBPS(player.id)} <strong>[{getBonusPoints(player.id)}]</strong></p>
+                                    )}
+                                </p>
+                            )}
                         </div>
                     ))}
                 </div>
