@@ -11,7 +11,7 @@ const normalizeString = (str) => {
 const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames }) => {
     const elements = mainData?.elements || [];
     const [gameweekData, setGameweekData] = useState(null);
-    const [selectedPlayer, setSelectedPlayer] = useState(null);
+    const [selectedPlayers, setSelectedPlayers] = useState([]);
 
     const brightonPlayers = elements.filter(player => player.team === 5);
 
@@ -400,8 +400,10 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
         }
     };
 
-    const handlePlayerClick = (playerId) => {
-        setSelectedPlayer(selectedPlayer === playerId ? null : playerId);
+    const togglePlayer = (playerId) => {
+        setSelectedPlayers(prev => 
+            prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId] // Toggle player selection
+        );
     };
 
     const PlayerColumn = ({ title, players, totalPoints, getPlayerPoints, getPlayerMinutes, getMinutesPoints, getPlayerGoals, getGoalsPoints, getPlayerAssists, getAssistsPoints }) => (
@@ -420,11 +422,11 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
                                     e.target.className = "fallback-pic"; // Add a different class for the fallback image
                                 }}
                                 alt={`player-${index + 1}`}
-                                onClick={() => handlePlayerClick(player.id)}
+                                onClick={() => togglePlayer(player.id)}
                             />
                             <p className="player-stat-name">{player.web_name}: <strong>{getPlayerPoints(player.id)}</strong></p>
                             
-                            {selectedPlayer === player.id && (
+                            {selectedPlayers.includes(player.id) && (
                                 <p className="player-stat-box">
                                     <p>Minutes: {getPlayerMinutes(player.id)} <strong>[{getMinutesPoints(player.id)}]</strong></p>
                                     {getPlayerGoals(player.id) !== 0 && (
