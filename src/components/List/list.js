@@ -428,39 +428,39 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
                             
                             {selectedPlayers.includes(player.id) && (
                                 <p className="player-stat-box">
-                                    <p>Minutes: {getPlayerMinutes(player.id)} <strong>[{getMinutesPoints(player.id)}]</strong></p>
+                                    <p>Minutes: {getPlayerMinutes(player.id)} <strong className = 'positive-stat'>[{getMinutesPoints(player.id)}]</strong></p>
                                     {getPlayerGoals(player.id) !== 0 && (
-                                        <p>Goals: {getPlayerGoals(player.id)} <strong>[{getGoalsPoints(player.id)}]</strong></p>
+                                        <p>Goals: {getPlayerGoals(player.id)} <strong className = 'positive-stat'>[{getGoalsPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerAssists(player.id) !== 0 && (
-                                        <p>Assists: {getPlayerAssists(player.id)} <strong>[{getAssistsPoints(player.id)}]</strong></p>
+                                        <p>Assists: {getPlayerAssists(player.id)} <strong className = 'positive-stat'>[{getAssistsPoints(player.id)}]</strong></p>
                                     )}
                                     {getCleanSheetPoints(player.id) !== 0 && (
-                                        <p>Clean Sheets: {getPlayerCleanSheets(player.id)} <strong>[{getCleanSheetPoints(player.id)}]</strong></p>
+                                        <p>Clean Sheets: {getPlayerCleanSheets(player.id)} <strong className = 'positive-stat'>[{getCleanSheetPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerPenaltySaves(player.id) !== 0 && (
-                                        <p>Penalty Saves: {getPlayerPenaltySaves(player.id)} <strong>[{getPenaltySavesPoints(player.id)}]</strong></p>
+                                        <p>Penalty Saves: {getPlayerPenaltySaves(player.id)} <strong className = 'positive-stat'>[{getPenaltySavesPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerSaves(player.id) !== 0 && (
-                                        <p>Saves: {getPlayerSaves(player.id)} <strong>[{getSavesPoints(player.id)}]</strong></p>
+                                        <p>Saves: {getPlayerSaves(player.id)} <strong className = 'positive-stat'>[{getSavesPoints(player.id)}]</strong></p>
                                     )}
                                     {getGoalsConcededPoints(player.id) !== 0 && (
-                                        <p>Conceded: {getPlayerGoalsConceded(player.id)} <strong>[{getGoalsConcededPoints(player.id)}]</strong></p>
+                                        <p>Conceded: {getPlayerGoalsConceded(player.id)} <strong className = 'negative-stat'>[{getGoalsConcededPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerOwnGoals(player.id) !== 0 && (
-                                        <p>Own Goals: {getPlayerOwnGoals(player.id)} <strong>[{getOwnGoalsPoints(player.id)}]</strong></p>
+                                        <p>Own Goals: {getPlayerOwnGoals(player.id)} <strong className = 'negative-stat'>[{getOwnGoalsPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerPenaltiesMissed(player.id) !== 0 && (
-                                        <p>Penalties Missed: {getPlayerPenaltiesMissed(player.id)} <strong>[{getPenaltiesMissedPoints(player.id)}]</strong></p>
+                                        <p>Penalties Missed: {getPlayerPenaltiesMissed(player.id)} <strong className = 'negative-stat'>[{getPenaltiesMissedPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerYellowCards(player.id) !== 0 && (
-                                        <p>Yellow Cards: {getPlayerYellowCards(player.id)} <strong>[{getYellowCardsPoints(player.id)}]</strong></p>
+                                        <p>Yellow Cards: {getPlayerYellowCards(player.id)} <strong className = 'negative-stat'>[{getYellowCardsPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerRedCards(player.id) !== 0 && (
-                                        <p>Red Cards: {getPlayerRedCards(player.id)} <strong>[{getRedCardsPoints(player.id)}]</strong></p>
+                                        <p>Red Cards: {getPlayerRedCards(player.id)} <strong className = 'negative-stat'>[{getRedCardsPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerBPS(player.id) !== 0 && (
-                                        <p>BPS: {getPlayerBPS(player.id)} <strong>[{getBonusPoints(player.id)}]</strong></p>
+                                        <p>BPS: {getPlayerBPS(player.id)} <strong className = 'positive-stat'>[{getBonusPoints(player.id)}]</strong></p>
                                     )}
                                 </p>
                             )}

@@ -129,3 +129,11 @@
 .plus-button {
     background-color: rgb(106, 187, 106);
 }
+
+.positive-stat {
+    color:rgb(106, 187, 106)
+}
+
+.negative-stat {
+    color:rgb(234, 115, 115);
+}
