@@ -409,8 +409,11 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
                         <div key={player.code} className="player-pic-container">
                             <img
                                 className="player-pic"
-                                src={`https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png`}
-                                onError={(e) => { e.target.src = "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png"; }}
+                                src={`https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png`}
+                                onError={(e) => {
+                                    e.target.src = "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png";
+                                    e.target.className = "fallback-pic"; // Add a different class for the fallback image
+                                }}
                                 alt={`player-${index + 1}`}
                             />
                             <p className="player-stat-name">{player.web_name}: <strong>{getPlayerPoints(player.id)}</strong></p>
