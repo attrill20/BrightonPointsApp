@@ -460,7 +460,7 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
                                         <p>Red Cards: {getPlayerRedCards(player.id)} <strong className = 'negative-stat'>[{getRedCardsPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerBPS(player.id) !== 0 && (
-                                        <p>BPS: {getPlayerBPS(player.id)} <strong className={getBonusPoints(player.id) > 1 ? 'positive-stat' : ''}>
+                                        <p>BPS: {getPlayerBPS(player.id)} <strong className={getBonusPoints(player.id) > 0 ? 'positive-stat' : ''}>
                                                 [{getBonusPoints(player.id)}]
                                             </strong>
                                         </p>
