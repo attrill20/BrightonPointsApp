@@ -40,6 +40,10 @@
     font-size: 1.2rem;
 }
 
+.fixture-display {
+    text-align: center;
+}
+
 .player-pic {
     width: 140px;
     height: 140px;
@@ -74,7 +78,7 @@
     margin-bottom: 2px;
 }
 
-.gameweek, .outcome {
+.gameweek, .outcome, .fixture-names {
     margin-top: 5px;
     margin-bottom: 5px;
 }

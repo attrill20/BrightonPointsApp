@@ -8,13 +8,60 @@ const normalizeString = (str) => {
         .replace(/[\u0300-\u036f]/g, "");
 };
 
-const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames }) => {
+const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames }) => {
     const elements = mainData?.elements || [];
     const [gameweekData, setGameweekData] = useState(null);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
+    const [gameweekFixture, setGameweekFixture] = useState(null);
 
     const brightonPlayers = elements.filter(player => player.team === 5);
 
+    const teams = [
+        { id: 0, name: "Blank", initial: "NULL", h_diff: 11, a_diff: 11 },
+        { id: 1, name: "Arsenal", initial: "ARS", h_diff: 8, a_diff: 9, code: 3 },
+        { id: 2, name: "Aston Villa", initial: "AVL", h_diff: 5, a_diff: 10, code: 7 },
+        { id: 3, name: "Bournemouth", initial: "BOU", h_diff: 4, a_diff: 4, code: 91 },
+        { id: 4, name: "Brentford", initial: "BRE", h_diff: 3, a_diff: 6, code: 94 },
+        { id: 5, name: "Brighton", initial: "BHA", h_diff: 5, a_diff: 7, code: 36 },
+        // { id: 6, name: "Burnley", initial: "BUR", h_diff: 2, a_diff: 1 },
+        { id: 6, name: "Chelsea", initial: "CHE", h_diff: 5, a_diff: 4, code: 8 },
+        { id: 7, name: "Crystal Palace", initial: "CRY",  h_diff: 5, a_diff: 2, code: 31 },
+        { id: 8, name: "Everton", initial: "EVE", h_diff: 6, a_diff: 3, code: 11 },
+        { id: 9, name: "Fulham", initial: "FUL", h_diff: 3, a_diff: 6, code: 54 },
+        { id: 10, name: "Ipswich", initial: "IPS", h_diff: 3, a_diff: 6, code: 40 },
+        { id: 11, name: "Leicester", initial: "LEI", h_diff: 3, a_diff: 6, code: 13 },
+        // { name: "Leeds United", initial: "LEE",},
+        { id: 12, name: "Liverpool", initial: "LIV", h_diff: 7, a_diff: 10, code: 14 },
+        // { id: 13, name: "Luton", initial: "LUT", h_diff: 2, a_diff: 2 },
+        { id: 13, name: "Man City", initial: "MCI", h_diff: 7, a_diff: 9, code: 43 },
+        { id: 14, name: "Man United", initial: "MUN", h_diff: 6, a_diff: 6, code: 1 },
+        { id: 15, name: "Newcastle", initial: "NEW", h_diff: 3, a_diff: 9, code: 4 },
+        { id: 16, name: "Notts Forest", initial: "NFO", h_diff: 2, a_diff: 4, code: 17 },
+        { id: 17, name: "Southampton", initial: "SOU", h_diff: 3, a_diff: 6, code: 20 },
+        // { id: 17, name: "Sheffield Utd", initial: "SHU", h_diff: 1, a_diff: 4 },
+        { id: 18, name: "Spurs", initial: "TOT", h_diff: 7, a_diff: 6, code: 6 },
+        { id: 19, name: "West Ham", initial: "WHU", h_diff: 6, a_diff: 5, code: 21 },
+        { id: 20, name: "Wolves", initial: "WOL", h_diff: 3, a_diff: 5, code: 39 },
+      ];
+
+    useEffect(() => {
+        if (Array.isArray(fixturesData)) { 
+            const fixture = fixturesData.find(
+                (fixture) =>
+                    fixture.event === selectedGameweek &&
+                    (fixture.team_h === 5 || fixture.team_a === 5)
+            );
+    
+            if (fixture) {
+                setGameweekFixture(fixture);
+            } else {
+                setGameweekFixture(null);
+            }
+        } else {
+            setGameweekFixture(null);
+        }
+    }, [fixturesData, selectedGameweek]);
+    
     const playersForJames = brightonPlayers
     .filter(player => {
         const matchedPlayer = jamesPlayerNames.find(jamesPlayer => 
@@ -146,9 +193,7 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
     
         if (!player || assists === 0) return 0;
     
-        let assistsPoints = 3;
-    
-        return assists * assistsPoints;
+        return assists * 3;
     };
 
     const getPlayerCleanSheets = (playerId) => {
@@ -194,9 +239,7 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
     
         if (!player || penaltySaves === 0) return 0;
     
-        let penaltySavesPoints = 5;
-    
-        return penaltySaves * penaltySavesPoints;
+        return penaltySaves * 5;
     };
 
     const getPlayerSaves = (playerId) => {
@@ -428,7 +471,9 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
                             
                             {selectedPlayers.includes(player.id) && (
                                 <p className="player-stat-box">
-                                    <p>Minutes: {getPlayerMinutes(player.id)} <strong className = 'positive-stat'>[{getMinutesPoints(player.id)}]</strong></p>
+                                    <p>Minutes: {getPlayerMinutes(player.id)} <strong className={getMinutesPoints(player.id) > 0 ? 'positive-stat' : ''}>        [{getMinutesPoints(player.id)}]
+                                        </strong>
+                                    </p>
                                     {getPlayerGoals(player.id) !== 0 && (
                                         <p>Goals: {getPlayerGoals(player.id)} <strong className = 'positive-stat'>[{getGoalsPoints(player.id)}]</strong></p>
                                     )}
@@ -459,7 +504,7 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
                                     {getPlayerRedCards(player.id) !== 0 && (
                                         <p>Red Cards: {getPlayerRedCards(player.id)} <strong className = 'negative-stat'>[{getRedCardsPoints(player.id)}]</strong></p>
                                     )}
-                                    {getPlayerBPS(player.id) !== 0 && (
+                                    {getPlayerMinutes(player.id) !== 0 && (
                                         <p>BPS: {getPlayerBPS(player.id)} <strong className={getBonusPoints(player.id) > 0 ? 'positive-stat' : ''}>
                                                 [{getBonusPoints(player.id)}]
                                             </strong>
@@ -479,7 +524,7 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
     return (
         <div>
             <p className="outcome"><strong>{calculateOutcome()}</strong></p>
-            
+
             <div className="input-container">
                 <label htmlFor="gameweek">Current Gameweek: </label>
                 <div className="input-wrapper">
@@ -510,6 +555,24 @@ const List = ({ mainData, activeGameweek, selectedGameweek, onGameweekChange, ja
                     <button className="plus-button" onClick={handleMultiplierIncrement}> + </button>
                 </div>
             </div>
+
+            {gameweekFixture ? (
+    <div className="fixture-display">
+        <p className="fixture-names">
+            {gameweekFixture.team_h_score !== null && gameweekFixture.team_a_score !== null
+                ? `${teams.find(team => team.id === gameweekFixture.team_h)?.name || "Unknown"} (${gameweekFixture.team_h_score}) v ${teams.find(team => team.id === gameweekFixture.team_a)?.name || "Unknown"} (${gameweekFixture.team_a_score})`
+                : `${teams.find(team => team.id === gameweekFixture.team_h)?.name || "Unknown"} v ${teams.find(team => team.id === gameweekFixture.team_a)?.name || "Unknown"}`}
+        </p>
+        <p className="fixture-names">
+            {new Date(gameweekFixture.kickoff_time).toLocaleDateString()}{" "}
+            {new Date(gameweekFixture.kickoff_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '').replace(':00', '')}
+        </p>
+    </div>
+) : (
+    <p>No Brighton fixture in GW {selectedGameweek}</p>
+)}
+
+
 
             <div className="player-columns">
                 <PlayerColumn
