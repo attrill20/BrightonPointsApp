@@ -557,21 +557,57 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
             </div>
 
             {gameweekFixture ? (
-    <div className="fixture-display">
-        <p className="fixture-names">
-            {gameweekFixture.team_h_score !== null && gameweekFixture.team_a_score !== null
-                ? `${teams.find(team => team.id === gameweekFixture.team_h)?.name || "Unknown"} (${gameweekFixture.team_h_score}) v ${teams.find(team => team.id === gameweekFixture.team_a)?.name || "Unknown"} (${gameweekFixture.team_a_score})`
-                : `${teams.find(team => team.id === gameweekFixture.team_h)?.name || "Unknown"} v ${teams.find(team => team.id === gameweekFixture.team_a)?.name || "Unknown"}`}
-        </p>
-        <p className="fixture-names">
-            {new Date(gameweekFixture.kickoff_time).toLocaleDateString()}{" "}
-            {new Date(gameweekFixture.kickoff_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '').replace(':00', '')}
-        </p>
-    </div>
-) : (
-    <p>No Brighton fixture in GW {selectedGameweek}</p>
-)}
+            <div className="fixture-display">
+                <p className="fixture-names">
+                    {gameweekFixture.team_h_score !== null && gameweekFixture.team_a_score !== null
+                        ? `${teams.find(team => team.id === gameweekFixture.team_h)?.name || "Unknown"} (${gameweekFixture.team_h_score}) v ${teams.find(team => team.id === gameweekFixture.team_a)?.name || "Unknown"} (${gameweekFixture.team_a_score})`
+                        : `${teams.find(team => team.id === gameweekFixture.team_h)?.name || "Unknown"} v ${teams.find(team => team.id === gameweekFixture.team_a)?.name || "Unknown"}`}
+                </p>
+                <p className="fixture-names">
+                    {new Date(gameweekFixture.kickoff_time).toLocaleDateString()}{" "}
+                    {new Date(gameweekFixture.kickoff_time).toLocaleTimeString([], { hour: 'numeric', hour12: true }).replace(' ', '').replace(':00', '')}
+                </p>
+                
+                <div className="top-players">
+                    <p className = "fixture-names">
+                        {gameweekData && gameweekData.elements ? (
+                            (() => {
+                                const topPlayers = gameweekData.elements
+                                    .filter(player =>
+                                        [gameweekFixture.team_h, gameweekFixture.team_a].includes(
+                                            elements.find(el => el.id === player.id)?.team
+                                        )
+                                    )
+                                    .sort((a, b) => b.stats.bps - a.stats.bps)
+                                    .slice(0, 3);
 
+                                const allZeroBPS = topPlayers.every(player => player.stats.bps === 0);
+
+                                if (allZeroBPS) {
+                                    return "BPS: No BPS data available yet!";
+                                }
+
+                                return (
+                                    "BPS: " +
+                                    topPlayers
+                                        .map(player => {
+                                            const playerData = elements.find(el => el.id === player.id);
+                                            return playerData
+                                                ? `${playerData.web_name} (${player.stats.bps})`
+                                                : "Unknown Player";
+                                        })
+                                        .join(", ")
+                                );
+                            })()
+                        ) : (
+                            "No data available"
+                        )}
+                    </p>
+                </div>
+            </div>
+            ) : (
+                <p>No Brighton fixture in GW {selectedGameweek}</p>
+            )}
 
 
             <div className="player-columns">
