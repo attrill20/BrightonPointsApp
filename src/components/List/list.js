@@ -409,6 +409,12 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     function calculateFallbackBonusPoints(playerId, gameweekFixture, elements) {
+        // Check if gameweekData.elements exists
+        if (!gameweekData || !gameweekData.elements) {
+            console.error('gameweekData or gameweekData.elements is null');
+            return 0; // or return a default value in case of missing data
+        }
+    
         const topPlayers = gameweekData.elements
             .filter(player =>
                 [gameweekFixture.team_h, gameweekFixture.team_a].includes(
@@ -470,7 +476,6 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     
         return points;
     }
-    
 
     const handleGameweekInputChange = (e) => {
         const value = e.target.value;
