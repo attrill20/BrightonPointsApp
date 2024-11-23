@@ -118,17 +118,67 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         fetchGameweekData();
     }, [selectedGameweek]);
 
+    // const getPlayerPoints = (playerId) => {
+    //     if (selectedGameweek === activeGameweek) {
+    //         const player = elements.find(player => player.id === playerId);
+    //         return player ? player.event_points : 0; 
+    //     }
+
+    //     if (gameweekData) {
+    //         const playerStats = gameweekData.elements.find(player => player.id === playerId);
+    //         return playerStats ? playerStats.stats.total_points : 0;
+    //     }
+
+    //     return 0;
+    // };
+
     const getPlayerPoints = (playerId) => {
         if (selectedGameweek === activeGameweek) {
             const player = elements.find(player => player.id === playerId);
-            return player ? player.event_points : 0; 
+            if (player) {
+                const minutesPoints = getMinutesPoints(playerId);
+                const goalsPoints = getGoalsPoints(playerId);
+                const assistsPoints = getAssistsPoints(playerId);
+                const cleanSheetPoints = getCleanSheetPoints(playerId);
+                const penaltySavesPoints = getPenaltySavesPoints(playerId);
+                const savesPoints = getSavesPoints(playerId);
+                const ownGoalsPoints = getOwnGoalsPoints(playerId);
+                const penaltiesMissedPoints = getPenaltiesMissedPoints(playerId);
+                const goalsConcededPoints = getGoalsConcededPoints(playerId);
+                const yellowCardsPoints = getYellowCardsPoints(playerId);
+                const redCardsPoints = getRedCardsPoints(playerId);
+                const bpsPoints = calculateFallbackBonusPoints(playerId, gameweekFixture, elements)
+                
+                return minutesPoints + goalsPoints + assistsPoints + cleanSheetPoints + penaltySavesPoints + 
+                       savesPoints + ownGoalsPoints + penaltiesMissedPoints + goalsConcededPoints + 
+                       yellowCardsPoints + redCardsPoints + bpsPoints;
+            }
+            return 0;
         }
-
+    
         if (gameweekData) {
             const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.total_points : 0;
+            if (playerStats) {
+                const minutesPoints = getMinutesPoints(playerId);
+                const goalsPoints = getGoalsPoints(playerId);
+                const assistsPoints = getAssistsPoints(playerId);
+                const cleanSheetPoints = getCleanSheetPoints(playerId);
+                const penaltySavesPoints = getPenaltySavesPoints(playerId);
+                const savesPoints = getSavesPoints(playerId);
+                const ownGoalsPoints = getOwnGoalsPoints(playerId);
+                const penaltiesMissedPoints = getPenaltiesMissedPoints(playerId);
+                const goalsConcededPoints = getGoalsConcededPoints(playerId);
+                const yellowCardsPoints = getYellowCardsPoints(playerId);
+                const redCardsPoints = getRedCardsPoints(playerId);
+                const bpsPoints = calculateFallbackBonusPoints(playerId, gameweekFixture, elements) 
+                
+                return minutesPoints + goalsPoints + assistsPoints + cleanSheetPoints + penaltySavesPoints + 
+                       savesPoints + ownGoalsPoints + penaltiesMissedPoints + goalsConcededPoints + 
+                       yellowCardsPoints + redCardsPoints + bpsPoints;
+            }
+            return 0;
         }
-
+    
         return 0;
     };
 
@@ -358,30 +408,69 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         }
     };
 
-    const getBPSPoints = (playerId) => {
-        const player = elements.find(player => player.id === playerId);
-        const bps = getPlayerBPS(playerId);
+    function calculateFallbackBonusPoints(playerId, gameweekFixture, elements) {
+        const topPlayers = gameweekData.elements
+            .filter(player =>
+                [gameweekFixture.team_h, gameweekFixture.team_a].includes(
+                    elements.find(el => el.id === player.id)?.team
+                )
+            )
+            .sort((a, b) => (b.stats?.bps || 0) - (a.stats?.bps || 0));
     
-        if (!player || bps === 0) return 0;
+        console.log('Top Players:', topPlayers);
     
-        return bps;
-    };
-
-    const getPlayerBonus = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.bonus : 0;
-        }
-    };
-
-    const getBonusPoints = (playerId) => {
-        const player = elements.find(player => player.id === playerId);
-        const bonus = getPlayerBonus(playerId);
+        // Find the top players and handle ties
+        const topPlayersWithRank = topPlayers.reduce((acc, player, index) => {
+            const currentBps = player.stats?.bps || 0;
+            const lastRank = acc.length > 0 ? acc[acc.length - 1].bps : -1;
     
-        if (!player || bonus === 0) return 0;
+            // Handle ties in BPS (same rank for same BPS)
+            if (currentBps === lastRank) {
+                acc[acc.length - 1].players.push(player);
+            } else {
+                acc.push({ rank: index + 1, bps: currentBps, players: [player] });
+            }
     
-        return bonus;
-    };
+            return acc;
+        }, []);
+    
+        // Identify the player's rank based on their ID
+        let playerRank = 0;
+        topPlayersWithRank.forEach((group, groupIndex) => {
+            if (group.players.some(player => player.id === playerId)) {
+                playerRank = group.rank;
+            }
+        });
+    
+        // Bonus Points allocation based on rank and tie-breaking rules
+        if (playerRank === 1) return 3;
+        if (playerRank === 2) return 2;
+        if (playerRank === 3) return 1;
+    
+        // Adjustments for ties
+        let points = 0;
+        topPlayersWithRank.forEach(group => {
+            if (group.rank === 1) {
+                // All players in first rank get 3 points
+                group.players.forEach(player => {
+                    if (player.id === playerId) points = 3;
+                });
+            } else if (group.rank === 2) {
+                // All players in second rank get 2 points
+                group.players.forEach(player => {
+                    if (player.id === playerId) points = 2;
+                });
+            } else if (group.rank === 3) {
+                // All players in third rank get 1 point
+                group.players.forEach(player => {
+                    if (player.id === playerId) points = 1;
+                });
+            }
+        });
+    
+        return points;
+    }
+    
 
     const handleGameweekInputChange = (e) => {
         const value = e.target.value;
@@ -505,8 +594,9 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                                         <p>Red Cards: {getPlayerRedCards(player.id)} <strong className = 'negative-stat'>[{getRedCardsPoints(player.id)}]</strong></p>
                                     )}
                                     {getPlayerMinutes(player.id) !== 0 && (
-                                        <p>BPS: {getPlayerBPS(player.id)} <strong className={getBonusPoints(player.id) > 0 ? 'positive-stat' : ''}>
-                                                [{getBonusPoints(player.id)}]
+                                        <p>
+                                            BPS: {getPlayerBPS(player.id)} <strong className={calculateFallbackBonusPoints(player.id, gameweekFixture, elements) > 0 ? 'positive-stat' : ''}>
+                                                [{calculateFallbackBonusPoints(player.id, gameweekFixture, elements)}]
                                             </strong>
                                         </p>
                                     )}
@@ -608,7 +698,6 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
             ) : (
                 <p>No Brighton fixture in GW {selectedGameweek}</p>
             )}
-
 
             <div className="player-columns">
                 <PlayerColumn
