@@ -412,69 +412,45 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         // Check if gameweekData.elements exists
         if (!gameweekData || !gameweekData.elements) {
             console.error('gameweekData or gameweekData.elements is null');
-            return 0; // or return a default value in case of missing data
+            return 0; // Return a default value in case of missing data
         }
     
         const topPlayers = gameweekData.elements
             .filter(player =>
                 [gameweekFixture.team_h, gameweekFixture.team_a].includes(
                     elements.find(el => el.id === player.id)?.team
-                )
+                ) && (player.stats?.bps || 0) > 0 // Only include players with BPS > 0
             )
             .sort((a, b) => (b.stats?.bps || 0) - (a.stats?.bps || 0));
     
-        console.log('Top Players:', topPlayers);
-    
-        // Find the top players and handle ties
+        // Group players by rank based on their BPS scores
         const topPlayersWithRank = topPlayers.reduce((acc, player, index) => {
             const currentBps = player.stats?.bps || 0;
-            const lastRank = acc.length > 0 ? acc[acc.length - 1].bps : -1;
+            const lastGroup = acc[acc.length - 1];
     
-            // Handle ties in BPS (same rank for same BPS)
-            if (currentBps === lastRank) {
-                acc[acc.length - 1].players.push(player);
+            if (lastGroup && lastGroup.bps === currentBps) {
+                lastGroup.players.push(player);
             } else {
-                acc.push({ rank: index + 1, bps: currentBps, players: [player] });
+                acc.push({ rank: acc.length + 1, bps: currentBps, players: [player] });
             }
     
             return acc;
         }, []);
     
-        // Identify the player's rank based on their ID
+        // Identify the rank group that contains the given player ID
         let playerRank = 0;
-        topPlayersWithRank.forEach((group, groupIndex) => {
+        topPlayersWithRank.forEach(group => {
             if (group.players.some(player => player.id === playerId)) {
                 playerRank = group.rank;
             }
         });
     
-        // Bonus Points allocation based on rank and tie-breaking rules
+        // Bonus Points allocation based on rank
         if (playerRank === 1) return 3;
         if (playerRank === 2) return 2;
         if (playerRank === 3) return 1;
     
-        // Adjustments for ties
-        let points = 0;
-        topPlayersWithRank.forEach(group => {
-            if (group.rank === 1) {
-                // All players in first rank get 3 points
-                group.players.forEach(player => {
-                    if (player.id === playerId) points = 3;
-                });
-            } else if (group.rank === 2) {
-                // All players in second rank get 2 points
-                group.players.forEach(player => {
-                    if (player.id === playerId) points = 2;
-                });
-            } else if (group.rank === 3) {
-                // All players in third rank get 1 point
-                group.players.forEach(player => {
-                    if (player.id === playerId) points = 1;
-                });
-            }
-        });
-    
-        return points;
+        return 0;
     }
 
     const handleGameweekInputChange = (e) => {
