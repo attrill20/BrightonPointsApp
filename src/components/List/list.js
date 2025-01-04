@@ -627,8 +627,9 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 </p>
                 <p className="fixture-names">
                     {new Date(gameweekFixture.kickoff_time).toLocaleDateString()}{" "}
-                    {new Date(gameweekFixture.kickoff_time).toLocaleTimeString([], { hour: 'numeric', hour12: true }).replace(' ', '').replace(':00', '')}
+                    {new Date(gameweekFixture.kickoff_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '')}
                 </p>
+
                 
                 <div className="top-players">
                     <p className = "fixture-names">
