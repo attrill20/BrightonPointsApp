@@ -527,16 +527,7 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 <div className="pics-wrapper">
                     {players.map((player, index) => (
                         <div key={player.code} className="player-pic-container">
-                            <img
-                                className="player-pic"
-                                src={`https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png`}
-                                onError={(e) => {
-                                    e.target.src = "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png";
-                                    e.target.className = "fallback-pic"; // Add a different class for the fallback image
-                                }}
-                                alt={`player-${index + 1}`}
-                                onClick={() => togglePlayer(player.id)}
-                            />
+                            <PlayerImage player={player} togglePlayer={togglePlayer} index={index} />
                             <p className="player-stat-name">{player.web_name}: <strong>{getPlayerPoints(player.id)}</strong></p>
                             
                             {selectedPlayers.includes(player.id) && (
@@ -724,3 +715,37 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
 };
 
 export default List;
+
+const failedPlayerImageCache = new Map();
+
+function PlayerImage({ player, togglePlayer, index }) {
+  if (failedPlayerImageCache.has(player.code)) {
+    return (
+      <img
+        className="fallback-pic"
+        src={failedPlayerImageCache.get(player.code)}
+        alt={`player-${index + 1}`}
+        onClick={() => togglePlayer(player.id)}
+      />
+    );
+  }
+
+  return (
+    <img
+      className="player-pic"
+      src={`https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png`}
+      onError={(e) => {
+        e.target.src =
+          "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png";
+        e.target.className = "fallback-pic"; // Add a different class for the fallback image
+        // remember this image failed so we don't try and load it again
+        failedPlayerImageCache.set(
+          player.code,
+          "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png",
+        );
+      }}
+      alt={`player-${index + 1}`}
+      onClick={() => togglePlayer(player.id)}
+    />
+  );
+}
