@@ -64,10 +64,13 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     
     const playersForJames = brightonPlayers
     .filter(player => {
-        const matchedPlayer = jamesPlayerNames.find(jamesPlayer => 
+        const matchedPlayers = jamesPlayerNames.filter(jamesPlayer => 
             normalizeString(jamesPlayer.name) === normalizeString(player.web_name)
         );
-        return matchedPlayer && selectedGameweek >= matchedPlayer.startingGameweek; // Check if the selected gameweek is after the starting gameweek
+        return matchedPlayers.some(matchedPlayer =>
+            selectedGameweek >= matchedPlayer.startingGameweek && // Check if player is above the starting GW
+            selectedGameweek < matchedPlayer.endingGameweek // Check if player is below the ending GW
+        );
     })
     .sort((a, b) => {
         const aIndex = jamesPlayerNames.findIndex(jamesPlayer => 
@@ -81,10 +84,13 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
 
     const playersForLaurie = brightonPlayers
     .filter(player => {
-        const matchedPlayer = lauriePlayerNames.find(lauriePlayer => 
+        const matchedPlayers = lauriePlayerNames.filter(lauriePlayer => 
             normalizeString(lauriePlayer.name) === normalizeString(player.web_name)
         );
-        return matchedPlayer && selectedGameweek >= matchedPlayer.startingGameweek;
+        return matchedPlayers.some(matchedPlayer =>
+            selectedGameweek >= matchedPlayer.startingGameweek && // Check if player is above the starting GW
+            selectedGameweek < matchedPlayer.endingGameweek // Check if player is below the ending GW
+        );
     })
     .sort((a, b) => {
         const aIndex = lauriePlayerNames.findIndex(lauriePlayer => 

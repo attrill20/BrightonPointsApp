@@ -111,16 +111,17 @@ export default function App() {
         const jamesPlayerNames = [];
         const lauriePlayerNames = [];
   
-        for (let i = 3; i < data.length; i++) {
-            const jamesPlayer = data[i][2]; 
-            const lauriePlayer = data[i][3];
+        for (let i = 2; i < data.length; i++) {
+            const jamesPlayer = data[i][3]; 
+            const lauriePlayer = data[i][4];
             const startingGameweek = data[i][1]; 
+            const endingGameweek = data[i][2];
   
             if (jamesPlayer) {
-                jamesPlayerNames.push({ name: jamesPlayer.trim(), startingGameweek: Number(startingGameweek) });
+                jamesPlayerNames.push({ name: jamesPlayer.trim(), startingGameweek: Number(startingGameweek), endingGameweek: Number(endingGameweek) });
             }
             if (lauriePlayer) {
-                lauriePlayerNames.push({ name: lauriePlayer.trim(), startingGameweek: Number(startingGameweek) });
+                lauriePlayerNames.push({ name: lauriePlayer.trim(), startingGameweek: Number(startingGameweek), endingGameweek: Number(endingGameweek) });
             }
         }
   
