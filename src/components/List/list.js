@@ -154,11 +154,12 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 const goalsConcededPoints = getGoalsConcededPoints(playerId);
                 const yellowCardsPoints = getYellowCardsPoints(playerId);
                 const redCardsPoints = getRedCardsPoints(playerId);
-                const bpsPoints = calculateFallbackBonusPoints(playerId, gameweekFixture, elements)
+                const bpsPoints = calculateFallbackBonusPoints(playerId, gameweekFixture, elements);
+                const defensiveContributionPoints = getDefensiveContributionPoints(playerId);
                 
                 return minutesPoints + goalsPoints + assistsPoints + cleanSheetPoints + penaltySavesPoints + 
                        savesPoints + ownGoalsPoints + penaltiesMissedPoints + goalsConcededPoints + 
-                       yellowCardsPoints + redCardsPoints + bpsPoints;
+                       yellowCardsPoints + redCardsPoints + bpsPoints + defensiveContributionPoints;
             }
             return 0;
         }
@@ -177,11 +178,12 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 const goalsConcededPoints = getGoalsConcededPoints(playerId);
                 const yellowCardsPoints = getYellowCardsPoints(playerId);
                 const redCardsPoints = getRedCardsPoints(playerId);
-                const bpsPoints = calculateFallbackBonusPoints(playerId, gameweekFixture, elements) 
+                const bpsPoints = calculateFallbackBonusPoints(playerId, gameweekFixture, elements);
+                const defensiveContributionPoints = getDefensiveContributionPoints(playerId);
                 
                 return minutesPoints + goalsPoints + assistsPoints + cleanSheetPoints + penaltySavesPoints + 
                        savesPoints + ownGoalsPoints + penaltiesMissedPoints + goalsConcededPoints + 
-                       yellowCardsPoints + redCardsPoints + bpsPoints;
+                       yellowCardsPoints + redCardsPoints + bpsPoints + defensiveContributionPoints;
             }
             return 0;
         }
@@ -399,6 +401,68 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         }
     };
 
+    const getPlayerDefensiveContribution = (playerId) => {
+        if (gameweekData) {
+            const playerStats = gameweekData.elements.find(player => player.id === playerId);
+            return playerStats ? playerStats.stats.defensive_contribution : 0;
+        }
+        return 0;
+    };
+
+    const getPlayerClearancesBlocksInterceptions = (playerId) => {
+        if (gameweekData) {
+            const playerStats = gameweekData.elements.find(player => player.id === playerId);
+            return playerStats ? playerStats.stats.clearances_blocks_interceptions : 0;
+        }
+        return 0;
+    };
+
+    const getPlayerTackles = (playerId) => {
+        if (gameweekData) {
+            const playerStats = gameweekData.elements.find(player => player.id === playerId);
+            return playerStats ? playerStats.stats.tackles : 0;
+        }
+        return 0;
+    };
+
+    const getPlayerBallRecoveries = (playerId) => {
+        if (gameweekData) {
+            const playerStats = gameweekData.elements.find(player => player.id === playerId);
+            return playerStats ? playerStats.stats.ball_recoveries || 0 : 0;
+        }
+        return 0;
+    };
+
+    const getDefensiveContributionPoints = (playerId) => {
+        const defensiveContribution = getPlayerDefensiveContribution(playerId);
+        return defensiveContribution > 0 ? 2 : 0;
+    };
+
+    const getTotalDefensiveActions = (playerId) => {
+        const player = elements.find(player => player.id === playerId);
+        if (!player) return 0;
+        
+        const cbi = getPlayerClearancesBlocksInterceptions(playerId);
+        const tackles = getPlayerTackles(playerId);
+        
+        // Defenders (element_type 2): Only need CBIT (10 threshold)
+        if (player.element_type === 2) {
+            return cbi + tackles;
+        }
+        
+        // Midfielders (3) and Forwards (4): Need CBIT + ball recoveries (12 threshold)
+        const ballRecoveries = getPlayerBallRecoveries(playerId);
+        return cbi + tackles + ballRecoveries;
+    };
+
+    const getDefensiveThreshold = (playerId) => {
+        const player = elements.find(player => player.id === playerId);
+        if (!player) return 0;
+        
+        // Defenders need 10, others need 12
+        return player.element_type === 2 ? 10 : 12;
+    };
+
     const getRedCardsPoints = (playerId) => {
         const player = elements.find(player => player.id === playerId);
         const redCards = getPlayerRedCards(playerId);
@@ -576,6 +640,13 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                                         <p>
                                             BPS: {getPlayerBPS(player.id)} <strong className={calculateFallbackBonusPoints(player.id, gameweekFixture, elements) > 0 ? 'positive-stat' : ''}>
                                                 [{calculateFallbackBonusPoints(player.id, gameweekFixture, elements)}]
+                                            </strong>
+                                        </p>
+                                    )}
+                                    {(getTotalDefensiveActions(player.id) > 0 || getPlayerDefensiveContribution(player.id) > 0) && (
+                                        <p>
+                                            DefCons: {getTotalDefensiveActions(player.id)}/{getDefensiveThreshold(player.id)} <strong className={getDefensiveContributionPoints(player.id) > 0 ? 'positive-stat' : ''}>
+                                                [{getDefensiveContributionPoints(player.id)}]
                                             </strong>
                                         </p>
                                     )}
