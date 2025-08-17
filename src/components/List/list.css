@@ -45,15 +45,15 @@
 }
 
 .player-pic {
-    width: 140px;
+    width: 110px;
     height: 140px;
-    object-fit: cover; 
+    object-fit: contain; 
 }
 
 .fallback-pic {
     width: 110px;
     height: 140px;
-    object-fit: cover; 
+    object-fit: contain; 
 }
 
 .player-stat-name, .player-stat-box {

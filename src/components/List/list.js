@@ -775,7 +775,7 @@ function PlayerImage({ player, togglePlayer, index }) {
   return (
     <img
       className="player-pic"
-      src={`https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png`}
+      src={`https://resources.premierleague.com/premierleague25/photos/players/110x140/${player.code}.png`}
       onError={(e) => {
         e.target.src =
           "https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_36-110.png";
