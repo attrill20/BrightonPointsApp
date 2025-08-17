@@ -1,0 +1,29 @@
+.progress-bar-container {
+    display: flex;
+    height: 10px;
+    width: 140px;
+    margin-top: 5px;
+}
+
+.progress-bar-chunk {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    background-color: #eee;
+}
+
+.progress-bar-chunk.red {
+    background-color: rgb(234, 115, 115);
+}
+
+.progress-bar-chunk.yellow {
+    background-color: yellow;
+}
+
+.progress-bar-chunk.green {
+    background-color: rgb(106, 187, 106);
+}
+
+.goalkeeper-bar {
+    background-color: white;
+    border: 1px solid #ccc;
+}

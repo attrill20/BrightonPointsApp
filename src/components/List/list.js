@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import "./list.css";
+import DefensiveProgressBar from '../DefensiveProgressBar/DefensiveProgressBar';
 
 const normalizeString = (str) => {
     return str
@@ -13,6 +14,7 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     const [gameweekData, setGameweekData] = useState(null);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
     const [gameweekFixture, setGameweekFixture] = useState(null);
+    const [allPlayersCollapsed, setAllPlayersCollapsed] = useState(true);
 
     const brightonPlayers = elements.filter(player => player.team === 6);
 
@@ -553,6 +555,16 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         );
     };
 
+    const toggleAllPlayers = () => {
+        if (allPlayersCollapsed) {
+            const allPlayerIds = [...playersForJames, ...playersForLaurie].map(p => p.id);
+            setSelectedPlayers(allPlayerIds);
+        } else {
+            setSelectedPlayers([]);
+        }
+        setAllPlayersCollapsed(!allPlayersCollapsed);
+    };
+
     const PlayerColumn = ({ title, players, totalPoints, getPlayerPoints, getPlayerMinutes, getMinutesPoints, getPlayerGoals, getGoalsPoints, getPlayerAssists, getAssistsPoints }) => (
         <div className="player-column">
             <p className="column-title"><strong>{title} Players</strong></p>
@@ -563,6 +575,7 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                         <div key={player.code} className="player-pic-container">
                             <PlayerImage player={player} togglePlayer={togglePlayer} index={index} />
                             <p className="player-stat-name">{player.web_name}: <strong>{getPlayerPoints(player.id)}</strong></p>
+                            <DefensiveProgressBar player={player} defensiveContribution={getPlayerDefensiveContribution(player.id)} defensiveThreshold={getDefensiveThreshold(player.id)} />
                             
                             {selectedPlayers.includes(player.id) && (
                                 <p className="player-stat-box">
@@ -606,7 +619,7 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                                             </strong>
                                         </p>
                                     )}
-                                    {player.element_type !== 1 && getPlayerDefensiveContribution(player.id) > 0 && (
+                                    {player.element_type !== 1 && getPlayerMinutes(player.id) > 0 && (
                                         <p>
                                             DefCons: {getPlayerDefensiveContribution(player.id)}/{getDefensiveThreshold(player.id)} <strong className={getDefensiveContributionPoints(player.id) > 0 ? 'positive-stat' : ''}>
                                                 [{getDefensiveContributionPoints(player.id)}]
@@ -657,6 +670,12 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                     />
                     <button className="plus-button" onClick={handleMultiplierIncrement}> + </button>
                 </div>
+            </div>
+
+            <div className="input-container">
+                <button onClick={toggleAllPlayers}>
+                    {allPlayersCollapsed ? 'Expand All' : 'Collapse All'}
+                </button>
             </div>
 
             {gameweekFixture ? (
