@@ -12,6 +12,22 @@ export default function App() {
   const [selectedGameweek, setSelectedGameweek] = useState(null);
   const [jamesPlayerNames, setJamesPlayerNames] = useState([]);
   const [lauriePlayerNames, setLauriePlayerNames] = useState([]);
+  const [captainSelections, setCaptainSelections] = useState({});
+
+  // Load captain selections from localStorage on mount
+  useEffect(() => {
+    const savedCaptains = localStorage.getItem('brightonPointsCaptains');
+    if (savedCaptains) {
+      setCaptainSelections(JSON.parse(savedCaptains));
+    }
+  }, []);
+
+  // Save captain selections to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(captainSelections).length > 0) {
+      localStorage.setItem('brightonPointsCaptains', JSON.stringify(captainSelections));
+    }
+  }, [captainSelections]);
 
   useEffect(() => {
     async function fetchFPL() {
@@ -137,6 +153,38 @@ export default function App() {
     fetchDataFromGoogleSheets();
   }, [mainData]);
 
+  const setCaptain = (gameweek, user, playerId) => {
+    // Only allow captain selection for GW22 onwards
+    if (gameweek < 22) return;
+    
+    setCaptainSelections(prev => ({
+      ...prev,
+      [`gw${gameweek}`]: {
+        ...prev[`gw${gameweek}`],
+        [user]: playerId,
+        [`${user}Timestamp`]: new Date().toISOString()
+      }
+    }));
+  };
+
+  const getCaptain = (gameweek, user) => {
+    // If captain exists for this gameweek, return it
+    if (captainSelections[`gw${gameweek}`]?.[user]) {
+      return captainSelections[`gw${gameweek}`][user];
+    }
+    
+    // Otherwise, find the most recent captain selection before this gameweek
+    let previousCaptain = null;
+    for (let gw = gameweek - 1; gw >= 22; gw--) {
+      if (captainSelections[`gw${gw}`]?.[user]) {
+        previousCaptain = captainSelections[`gw${gw}`][user];
+        break;
+      }
+    }
+    
+    return previousCaptain;
+  };
+
   return (
     <div className="app" style={appStyle}>
       <List
@@ -148,6 +196,9 @@ export default function App() {
         onGameweekChange={handleGameweekChange}
         jamesPlayerNames={jamesPlayerNames}
         lauriePlayerNames={lauriePlayerNames}
+        setCaptain={setCaptain}
+        getCaptain={getCaptain}
+        captainSelections={captainSelections}
       />
     </div>
   );

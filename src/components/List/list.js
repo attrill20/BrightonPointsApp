@@ -9,7 +9,7 @@ const normalizeString = (str) => {
         .replace(/[\u0300-\u036f]/g, "");
 };
 
-const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames }) => {
+const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames, setCaptain, getCaptain, captainSelections }) => {
     const elements = mainData?.elements || [];
     const [gameweekData, setGameweekData] = useState(null);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
@@ -534,9 +534,42 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     const handleMultiplierDecrement = () => {
         setMultiplier((prevMultiplier) => Math.max(prevMultiplier - 1, 0));
     };
+
+    const canSelectCaptain = (gameweek) => {
+        if (gameweek < 22) return false;
+        
+        // Check if fixture has started
+        if (gameweekFixture) {
+            const kickoffTime = new Date(gameweekFixture.kickoff_time);
+            const now = new Date();
+            return now < kickoffTime;
+        }
+        
+        return true; // Allow if no fixture data yet
+    };
+
+    const handleCaptainSelect = (user, playerId) => {
+        if (canSelectCaptain(selectedGameweek)) {
+            setCaptain(selectedGameweek, user, playerId);
+        }
+    };
+
+    // Check if a player is captained
+    const isCaptain = (user, playerId) => {
+        return getCaptain(selectedGameweek, user) === playerId;
+    };
     
-    const totalPointsJames = playersForJames.reduce((sum, player) => sum + getPlayerPoints(player.id), 0);
-    const totalPointsLaurie = playersForLaurie.reduce((sum, player) => sum + getPlayerPoints(player.id), 0);
+    // Calculate points with captain bonus
+    const getPlayerPointsWithCaptain = (playerId, user) => {
+        const basePoints = getPlayerPoints(playerId);
+        if (selectedGameweek >= 22 && isCaptain(user, playerId)) {
+            return basePoints * 2;
+        }
+        return basePoints;
+    };
+    
+    const totalPointsJames = playersForJames.reduce((sum, player) => sum + getPlayerPointsWithCaptain(player.id, 'james'), 0);
+    const totalPointsLaurie = playersForLaurie.reduce((sum, player) => sum + getPlayerPointsWithCaptain(player.id, 'laurie'), 0);
 
     const calculateOutcome = () => {
         const pointDifference = Math.abs(totalPointsJames - totalPointsLaurie) * multiplier;
@@ -565,7 +598,7 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         setAllPlayersCollapsed(!allPlayersCollapsed);
     };
 
-    const PlayerColumn = ({ title, players, totalPoints, getPlayerPoints, getPlayerMinutes, getMinutesPoints, getPlayerGoals, getGoalsPoints, getPlayerAssists, getAssistsPoints }) => (
+    const PlayerColumn = ({ title, players, totalPoints, user }) => (
         <div className="player-column">
             <p className="column-title"><strong>{title} Players</strong></p>
             <p className="total-points">Total Points: <strong>{totalPoints}</strong></p>
@@ -573,8 +606,25 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 <div className="pics-wrapper">
                     {players.map((player, index) => (
                         <div key={player.code} className="player-pic-container">
+                            {selectedGameweek >= 22 && isCaptain(user, player.id) && (
+                                <div className="captain-badge">C</div>
+                            )}
                             <PlayerImage player={player} togglePlayer={togglePlayer} index={index} />
-                            <p className="player-stat-name">{player.web_name}: <strong>{getPlayerPoints(player.id)}</strong></p>
+                            <p className="player-stat-name">
+                                {player.web_name}: <strong>{getPlayerPointsWithCaptain(player.id, user)}</strong>
+                                {selectedGameweek >= 22 && isCaptain(user, player.id) && (
+                                    <span className="captain-multiplier"> (x2)</span>
+                                )}
+                            </p>
+                            {selectedGameweek >= 22 && canSelectCaptain(selectedGameweek) && (
+                                <button 
+                                    className="captain-button"
+                                    onClick={() => handleCaptainSelect(user, player.id)}
+                                    disabled={isCaptain(user, player.id)}
+                                >
+                                    {isCaptain(user, player.id) ? 'Captain' : 'Make Captain'}
+                                </button>
+                            )}
                             <DefensiveProgressBar player={player} defensiveContribution={getPlayerDefensiveContribution(player.id)} defensiveThreshold={getDefensiveThreshold(player.id)} />
                             
                             {selectedPlayers.includes(player.id) && (
@@ -726,6 +776,18 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                             "No data available"
                         )}
                     </p>
+                    {selectedGameweek >= 22 && (
+                        <p className="captain-summary">
+                            Captains: James - {getCaptain(selectedGameweek, 'james') ? 
+                                brightonPlayers.find(p => p.id === getCaptain(selectedGameweek, 'james'))?.web_name || 'Unknown' 
+                                : 'Not selected'} 
+                            {' | '}
+                            Laurie - {getCaptain(selectedGameweek, 'laurie') ? 
+                                brightonPlayers.find(p => p.id === getCaptain(selectedGameweek, 'laurie'))?.web_name || 'Unknown' 
+                                : 'Not selected'}
+                            {gameweekFixture && !canSelectCaptain(selectedGameweek) && ' (Locked)'}
+                        </p>
+                    )}
                 </div>
             </div>
             ) : (
@@ -737,38 +799,14 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                     title="James"
                     players={playersForJames}
                     totalPoints={totalPointsJames}
-                    getPlayerPoints={getPlayerPoints}
-                    getPlayerMinutes={getPlayerMinutes}
-                    getMinutesPoints={getMinutesPoints}
-                    getPlayerGoals={getPlayerGoals}
-                    getGoalsPoints={getGoalsPoints}
-                    getPlayerAssists={getPlayerAssists}
-                    getAssistsPoints={getAssistsPoints}
-                    getPlayerCleanSheets={getPlayerCleanSheets}
-                    getCleanSheetPoints={getCleanSheetPoints}
-                    getPlayerSaves={getPlayerSaves}
-                    getSavesPoints={getSavesPoints}
-                    getPlayerGoalsConceded={getPlayerGoalsConceded}
-                    getGoalsConcededPoints={getGoalsConcededPoints}
+                    user="james"
                 />
 
                 <PlayerColumn
                     title="Laurie"
                     players={playersForLaurie}
                     totalPoints={totalPointsLaurie}
-                    getPlayerPoints={getPlayerPoints}
-                    getPlayerMinutes={getPlayerMinutes}
-                    getMinutesPoints={getMinutesPoints}
-                    getPlayerGoals={getPlayerGoals}
-                    getGoalsPoints={getGoalsPoints}
-                    getPlayerAssists={getPlayerAssists}
-                    getAssistsPoints={getAssistsPoints}
-                    getPlayerCleanSheets={getPlayerCleanSheets}
-                    getCleanSheetPoints={getCleanSheetPoints}
-                    getPlayerSaves={getPlayerSaves}
-                    getSavesPoints={getSavesPoints}
-                    getPlayerGoalsConceded={getPlayerGoalsConceded}
-                    getGoalsConcededPoints={getGoalsConcededPoints}
+                    user="laurie"
                 />
             </div>
         </div>

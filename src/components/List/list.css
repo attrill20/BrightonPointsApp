@@ -141,3 +141,61 @@
 .negative-stat {
     color:rgb(234, 115, 115);
 }
+
+/* Captain Feature Styles */
+.captain-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: gold;
+    color: black;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+.captain-button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+}
+
+.captain-button:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.captain-button:disabled {
+    background-color: gold;
+    color: black;
+    cursor: not-allowed;
+}
+
+.captain-multiplier {
+    color: gold;
+    font-weight: bold;
+}
+
+.captain-summary {
+    color: #8B6914;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-size: 1.1rem;
+}
+
+.player-pic-container {
+    position: relative;
+}
