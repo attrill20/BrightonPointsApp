@@ -2,8 +2,22 @@ import React, { useState, useEffect } from "react";
 import "./App.css";
 import List from "../List/list";
 import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  getAllCaptains,
+  setCaptain as setCaptainDB,
+  getAllMultiplierOverrides,
+  setMultiplierOverride as setMultiplierOverrideDB,
+  clearMultiplierOverride as clearMultiplierOverrideDB,
+  getAllQualifyingGames,
+  setQualifyingGame as setQualifyingGameDB,
+  getAllGameweekResults,
+  saveGameweekResult as saveGameweekResultDB,
+  getUserByUsername
+} from '../../supabase/queries';
 
 export default function App() {
+  const { user, logout } = useAuth();
   const [data, setData] = useState(null);
   const [mainData, setMainData] = useState(null);
   const [fixturesData, setFixturesData] = useState(null);
@@ -13,21 +27,73 @@ export default function App() {
   const [jamesPlayerNames, setJamesPlayerNames] = useState([]);
   const [lauriePlayerNames, setLauriePlayerNames] = useState([]);
   const [captainSelections, setCaptainSelections] = useState({});
+  const [multiplierOverrides, setMultiplierOverrides] = useState({});
+  const [qualifyingGames, setQualifyingGames] = useState({});
+  const [gameweekResults, setGameweekResults] = useState({});
+  const [userIds, setUserIds] = useState({ james: null, laurie: null });
 
-  // Load captain selections from localStorage on mount
+  // Fetch user IDs from Supabase on mount
   useEffect(() => {
-    const savedCaptains = localStorage.getItem('brightonPointsCaptains');
-    if (savedCaptains) {
-      setCaptainSelections(JSON.parse(savedCaptains));
+    async function fetchUserIds() {
+      try {
+        const james = await getUserByUsername('james');
+        const laurie = await getUserByUsername('laurie');
+
+        setUserIds({
+          james: james?.id || null,
+          laurie: laurie?.id || null
+        });
+      } catch (error) {
+        console.error('Error fetching user IDs:', error);
+      }
     }
+    fetchUserIds();
   }, []);
 
-  // Save captain selections to localStorage whenever they change
+  // Load all data from Supabase when user IDs are available
   useEffect(() => {
-    if (Object.keys(captainSelections).length > 0) {
-      localStorage.setItem('brightonPointsCaptains', JSON.stringify(captainSelections));
+    async function loadSupabaseData() {
+      if (!userIds.james || !userIds.laurie) return;
+
+      try {
+        // Load all captains for both users
+        const jamesCaptains = await getAllCaptains(userIds.james);
+        const laurieCaptains = await getAllCaptains(userIds.laurie);
+
+        // Merge captain selections
+        const mergedCaptains = {};
+        Object.keys(jamesCaptains).forEach(gw => {
+          mergedCaptains[gw] = {
+            ...mergedCaptains[gw],
+            james: jamesCaptains[gw]
+          };
+        });
+        Object.keys(laurieCaptains).forEach(gw => {
+          mergedCaptains[gw] = {
+            ...mergedCaptains[gw],
+            laurie: laurieCaptains[gw]
+          };
+        });
+        setCaptainSelections(mergedCaptains);
+
+        // Load multiplier overrides
+        const multipliers = await getAllMultiplierOverrides();
+        setMultiplierOverrides(multipliers);
+
+        // Load qualifying games
+        const qualifying = await getAllQualifyingGames();
+        setQualifyingGames(qualifying);
+
+        // Load gameweek results
+        const results = await getAllGameweekResults();
+        setGameweekResults(results);
+      } catch (error) {
+        console.error('Error loading Supabase data:', error);
+      }
     }
-  }, [captainSelections]);
+
+    loadSupabaseData();
+  }, [userIds]);
 
   useEffect(() => {
     async function fetchFPL() {
@@ -153,18 +219,28 @@ export default function App() {
     fetchDataFromGoogleSheets();
   }, [mainData]);
 
-  const setCaptain = (gameweek, user, playerId) => {
+  const setCaptain = async (gameweek, username, playerId) => {
     // Only allow captain selection for GW22 onwards
     if (gameweek < 22) return;
-    
+
+    const userId = userIds[username];
+    if (!userId) {
+      console.error(`User ID not found for ${username}`);
+      return;
+    }
+
+    // Update local state optimistically
     setCaptainSelections(prev => ({
       ...prev,
       [`gw${gameweek}`]: {
         ...prev[`gw${gameweek}`],
-        [user]: playerId,
-        [`${user}Timestamp`]: new Date().toISOString()
+        [username]: playerId,
+        [`${username}Timestamp`]: new Date().toISOString()
       }
     }));
+
+    // Sync to Supabase
+    await setCaptainDB(userId, gameweek, playerId);
   };
 
   const getCaptain = (gameweek, user) => {
@@ -185,8 +261,102 @@ export default function App() {
     return previousCaptain;
   };
 
+  const setMultiplierOverride = async (gameweek, multiplier) => {
+    // Update local state optimistically
+    setMultiplierOverrides(prev => ({
+      ...prev,
+      [`gw${gameweek}`]: multiplier
+    }));
+
+    // Sync to Supabase
+    await setMultiplierOverrideDB(gameweek, multiplier);
+  };
+
+  const getMultiplierOverride = (gameweek) => {
+    return multiplierOverrides[`gw${gameweek}`] || null;
+  };
+
+  const clearMultiplierOverride = async (gameweek) => {
+    // Update local state optimistically
+    setMultiplierOverrides(prev => {
+      const newOverrides = { ...prev };
+      delete newOverrides[`gw${gameweek}`];
+      return newOverrides;
+    });
+
+    // Sync to Supabase
+    await clearMultiplierOverrideDB(gameweek);
+  };
+
+  const setQualifyingGame = async (gameweek, isQualifying) => {
+    // Update local state optimistically
+    setQualifyingGames(prev => ({
+      ...prev,
+      [`gw${gameweek}`]: isQualifying
+    }));
+
+    // Sync to Supabase
+    await setQualifyingGameDB(gameweek, isQualifying);
+  };
+
+  const isQualifyingGame = (gameweek) => {
+    return qualifyingGames[`gw${gameweek}`] || false;
+  };
+
+  const saveGameweekResult = async (gameweek, jamesPoints, lauriePoints, multiplier) => {
+    const resultData = {
+      jamesPoints,
+      lauriePoints,
+      multiplier,
+      difference: Math.abs(jamesPoints - lauriePoints) * multiplier,
+      jamesPaid: jamesPoints < lauriePoints ? Math.abs(jamesPoints - lauriePoints) * multiplier : 0,
+      lauriePaid: lauriePoints < jamesPoints ? Math.abs(jamesPoints - lauriePoints) * multiplier : 0
+    };
+
+    // Update local state optimistically
+    setGameweekResults(prev => ({
+      ...prev,
+      [`gw${gameweek}`]: resultData
+    }));
+
+    // Sync to Supabase
+    await saveGameweekResultDB(gameweek, jamesPoints, lauriePoints, multiplier);
+  };
+
+  const getGameweekResult = (gameweek) => {
+    return gameweekResults[`gw${gameweek}`] || null;
+  };
+
   return (
     <div className="app" style={appStyle}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '10px 20px',
+        backgroundColor: '#005daa',
+        color: 'white',
+        borderBottom: '2px solid #004a8a'
+      }}>
+        <span style={{ fontSize: '16px', fontWeight: '500' }}>
+          Logged in as: {user?.displayName}
+        </span>
+        <button
+          onClick={logout}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: 'white',
+            color: '#005daa',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '14px'
+          }}
+        >
+          Logout
+        </button>
+      </div>
       <List
         mainData={mainData}
         fixturesData={fixturesData}
@@ -199,6 +369,15 @@ export default function App() {
         setCaptain={setCaptain}
         getCaptain={getCaptain}
         captainSelections={captainSelections}
+        setMultiplierOverride={setMultiplierOverride}
+        getMultiplierOverride={getMultiplierOverride}
+        clearMultiplierOverride={clearMultiplierOverride}
+        setQualifyingGame={setQualifyingGame}
+        isQualifyingGame={isQualifyingGame}
+        qualifyingGames={qualifyingGames}
+        saveGameweekResult={saveGameweekResult}
+        getGameweekResult={getGameweekResult}
+        gameweekResults={gameweekResults}
       />
     </div>
   );

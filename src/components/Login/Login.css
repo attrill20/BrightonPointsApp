@@ -1,0 +1,110 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #005daa 0%, #0085ca 100%);
+  padding: 20px;
+}
+
+.login-box {
+  background: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 100%;
+}
+
+.login-box h1 {
+  color: #005daa;
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 24px;
+}
+
+.login-box h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+  font-size: 20px;
+}
+
+.user-selection {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.user-selection button {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #005daa;
+  background: white;
+  color: #005daa;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.user-selection button.active {
+  background: #005daa;
+  color: white;
+}
+
+.pin-input-group {
+  margin-bottom: 20px;
+}
+
+.pin-input-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+  font-weight: 500;
+}
+
+.pin-input-group input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 24px;
+  letter-spacing: 8px;
+  text-align: center;
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+}
+
+.pin-input-group input:focus {
+  outline: none;
+  border-color: #005daa;
+}
+
+.error-message {
+  color: #d32f2f;
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px;
+  background: #005daa;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.login-button:hover:not(:disabled) {
+  background: #004a8a;
+}
+
+.login-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}

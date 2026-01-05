@@ -9,14 +9,23 @@ const normalizeString = (str) => {
         .replace(/[\u0300-\u036f]/g, "");
 };
 
-const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames, setCaptain, getCaptain, captainSelections }) => {
+const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames, setCaptain, getCaptain, captainSelections, setMultiplierOverride, getMultiplierOverride, clearMultiplierOverride, setQualifyingGame, isQualifyingGame, qualifyingGames, saveGameweekResult, getGameweekResult, gameweekResults }) => {
     const elements = mainData?.elements || [];
     const [gameweekData, setGameweekData] = useState(null);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
     const [gameweekFixture, setGameweekFixture] = useState(null);
     const [allPlayersCollapsed, setAllPlayersCollapsed] = useState(true);
+    const [showTotals, setShowTotals] = useState(false);
 
     const brightonPlayers = elements.filter(player => player.team === 6);
+
+    // State declarations must come before useEffect that uses them
+    const [multiplier, setMultiplier] = useState(() => {
+        // Check if there's a saved override for the current gameweek
+        const savedOverride = getMultiplierOverride ? getMultiplierOverride(selectedGameweek) : null;
+        return savedOverride || 2;
+    });
+    const [hasLocalOverride, setHasLocalOverride] = useState(false);
 
     const teams = [
         { id: 0, name: "Blank", initial: "NULL", h_diff: 11, a_diff: 11 },
@@ -65,6 +74,35 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         }
     }, [fixturesData, selectedGameweek]);
 
+    // Load saved multiplier override when gameweek changes
+    useEffect(() => {
+        if (selectedGameweek && getMultiplierOverride) {
+            const savedOverride = getMultiplierOverride(selectedGameweek);
+            if (savedOverride) {
+                setMultiplier(savedOverride);
+                setHasLocalOverride(false); // Reset local override flag when loading saved
+            } else {
+                setHasLocalOverride(false); // No saved override, allow auto-set
+            }
+        }
+    }, [selectedGameweek, getMultiplierOverride]);
+
+    // Auto-set multiplier based on home/away fixture
+    useEffect(() => {
+        const savedOverride = getMultiplierOverride ? getMultiplierOverride(selectedGameweek) : null;
+        
+        if (gameweekFixture && !hasLocalOverride && !savedOverride) {
+            // Brighton is team 6
+            if (gameweekFixture.team_h === 6) {
+                // Brighton is home
+                setMultiplier(2);
+            } else if (gameweekFixture.team_a === 6) {
+                // Brighton is away
+                setMultiplier(3);
+            }
+        }
+    }, [gameweekFixture, hasLocalOverride, selectedGameweek, getMultiplierOverride]);
+
     const playersForJames = brightonPlayers
     .filter(player => {
         const matchedPlayers = jamesPlayerNames.filter(jamesPlayer => 
@@ -104,8 +142,6 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         );
         return aIndex - bIndex;
     });
-
-    const [multiplier, setMultiplier] = useState(2);
 
     // Fetch gameweek data based on selectedGameweek
     useEffect(() => {
@@ -495,10 +531,12 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         // Allow empty input
         if (value === "") {
             onGameweekChange(e);
+            setHasLocalOverride(false); // Reset local override when changing gameweek
         } else {
             const numberValue = Number(value);
             if (numberValue >= 1 && numberValue <= 38) {
                 onGameweekChange(e);
+                setHasLocalOverride(false); // Reset local override when changing gameweek
             }
         }
     };
@@ -509,10 +547,17 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         // Allow empty input
         if (value === "") {
             setMultiplier(null);
+            if (clearMultiplierOverride) {
+                clearMultiplierOverride(selectedGameweek);
+            }
         } else {
             const numberValue = Number(value);
             if (numberValue > 0) {
                 setMultiplier(numberValue);
+                setHasLocalOverride(true); // User has manually changed it
+                if (setMultiplierOverride) {
+                    setMultiplierOverride(selectedGameweek, numberValue);
+                }
             }
         }
     };
@@ -520,19 +565,35 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     const handleIncrement = (setter, value, max = 38) => {
         const newValue = Math.min(value + 1, max);
         setter({ target: { value: newValue } });
+        if (setter === onGameweekChange) {
+            setHasLocalOverride(false); // Reset local override when changing gameweek
+        }
     };
     
     const handleDecrement = (setter, value, min = 1) => {
         const newValue = Math.max(value - 1, min);
         setter({ target: { value: newValue } });
+        if (setter === onGameweekChange) {
+            setHasLocalOverride(false); // Reset local override when changing gameweek
+        }
     };
 
     const handleMultiplierIncrement = () => {
-        setMultiplier((prevMultiplier) => Math.min(prevMultiplier + 1, 10));
+        const newValue = Math.min(multiplier + 1, 10);
+        setMultiplier(newValue);
+        setHasLocalOverride(true);
+        if (setMultiplierOverride) {
+            setMultiplierOverride(selectedGameweek, newValue);
+        }
     };
     
     const handleMultiplierDecrement = () => {
-        setMultiplier((prevMultiplier) => Math.max(prevMultiplier - 1, 0));
+        const newValue = Math.max(multiplier - 1, 1);
+        setMultiplier(newValue);
+        setHasLocalOverride(true);
+        if (setMultiplierOverride) {
+            setMultiplierOverride(selectedGameweek, newValue);
+        }
     };
 
     const canSelectCaptain = (gameweek) => {
@@ -582,6 +643,20 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         }
     };
 
+    // Auto-save gameweek results when fixture is finished
+    useEffect(() => {
+        if (gameweekFixture && gameweekFixture.finished && saveGameweekResult) {
+            // Save the results (only if they don't exist or have changed)
+            const existingResult = getGameweekResult ? getGameweekResult(selectedGameweek) : null;
+            if (!existingResult ||
+                existingResult.jamesPoints !== totalPointsJames ||
+                existingResult.lauriePoints !== totalPointsLaurie ||
+                existingResult.multiplier !== multiplier) {
+                saveGameweekResult(selectedGameweek, totalPointsJames, totalPointsLaurie, multiplier);
+            }
+        }
+    }, [gameweekFixture, selectedGameweek, totalPointsJames, totalPointsLaurie, multiplier]);
+
     const togglePlayer = (playerId) => {
         setSelectedPlayers(prev => 
             prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId] // Toggle player selection
@@ -596,6 +671,33 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
             setSelectedPlayers([]);
         }
         setAllPlayersCollapsed(!allPlayersCollapsed);
+    };
+
+    const handleQualifyingChange = () => {
+        if (setQualifyingGame) {
+            setQualifyingGame(selectedGameweek, !isQualifyingGame(selectedGameweek));
+        }
+    };
+
+    const calculateSeasonTotals = () => {
+        let totalJamesPaid = 0;
+        let totalLauriePaid = 0;
+
+        // Calculate for all gameweeks that are marked as qualifying
+        Object.keys(qualifyingGames || {}).forEach(gwKey => {
+            if (qualifyingGames[gwKey]) {
+                // Get the gameweek result for this gameweek
+                const result = gameweekResults?.[gwKey];
+
+                if (result) {
+                    // Add the amounts paid for this gameweek
+                    totalJamesPaid += result.jamesPaid || 0;
+                    totalLauriePaid += result.lauriePaid || 0;
+                }
+            }
+        });
+
+        return { totalJamesPaid, totalLauriePaid };
     };
 
     const PlayerColumn = ({ title, players, totalPoints, user }) => (
@@ -722,11 +824,50 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 </div>
             </div>
 
-            <div className="input-container">
+            <div className="input-container button-row">
                 <button onClick={toggleAllPlayers}>
                     {allPlayersCollapsed ? 'Expand All' : 'Collapse All'}
                 </button>
+                <label className="qualifying-checkbox">
+                    <input
+                        type="checkbox"
+                        checked={isQualifyingGame ? isQualifyingGame(selectedGameweek) : false}
+                        onChange={handleQualifyingChange}
+                        className="red-checkbox"
+                    />
+                    <span>Qualifying Game</span>
+                </label>
+                <button onClick={() => setShowTotals(!showTotals)}>
+                    {showTotals ? 'Hide Totals' : 'Show Totals'}
+                </button>
             </div>
+
+            {showTotals && (
+                <div className="season-totals">
+                    <h3>Season Totals (Qualifying Games Only)</h3>
+                    {(() => {
+                        const { totalJamesPaid, totalLauriePaid } = calculateSeasonTotals();
+                        const netAmount = Math.abs(totalJamesPaid - totalLauriePaid);
+                        let message = '';
+                        
+                        if (totalJamesPaid > totalLauriePaid) {
+                            message = `James has paid £${netAmount} more than Laurie`;
+                        } else if (totalLauriePaid > totalJamesPaid) {
+                            message = `Laurie has paid £${netAmount} more than James`;
+                        } else {
+                            message = "Even Stevens!";
+                        }
+                        
+                        return (
+                            <>
+                                <p>Total James has paid: £{totalJamesPaid}</p>
+                                <p>Total Laurie has paid: £{totalLauriePaid}</p>
+                                <p className="net-total"><strong>{message}</strong></p>
+                            </>
+                        );
+                    })()}
+                </div>
+            )}
 
             {gameweekFixture ? (
             <div className="fixture-display">
