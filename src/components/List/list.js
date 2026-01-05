@@ -682,22 +682,36 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     const calculateSeasonTotals = () => {
         let totalJamesPaid = 0;
         let totalLauriePaid = 0;
+        let jamesWins = 0;
+        let laurieWins = 0;
 
-        // Calculate for all gameweeks that are marked as qualifying
+        // Calculate for all gameweeks that are marked as qualifying UP TO the selected gameweek
         Object.keys(qualifyingGames || {}).forEach(gwKey => {
             if (qualifyingGames[gwKey]) {
-                // Get the gameweek result for this gameweek
-                const result = gameweekResults?.[gwKey];
+                const gw = parseInt(gwKey.replace('gw', ''));
 
-                if (result) {
-                    // Add the amounts paid for this gameweek
-                    totalJamesPaid += result.jamesPaid || 0;
-                    totalLauriePaid += result.lauriePaid || 0;
+                // Only include gameweeks up to and including the selected gameweek
+                if (gw <= selectedGameweek) {
+                    // Get the gameweek result for this gameweek
+                    const result = gameweekResults?.[gwKey];
+
+                    if (result) {
+                        // Add the amounts paid for this gameweek
+                        totalJamesPaid += result.jamesPaid || 0;
+                        totalLauriePaid += result.lauriePaid || 0;
+
+                        // Count wins (whoever didn't pay won)
+                        if (result.jamesPoints > result.lauriePoints) {
+                            jamesWins++;
+                        } else if (result.lauriePoints > result.jamesPoints) {
+                            laurieWins++;
+                        }
+                    }
                 }
             }
         });
 
-        return { totalJamesPaid, totalLauriePaid };
+        return { totalJamesPaid, totalLauriePaid, jamesWins, laurieWins };
     };
 
     const PlayerColumn = ({ title, players, totalPoints, user }) => (
@@ -833,9 +847,19 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                         type="checkbox"
                         checked={isQualifyingGame ? isQualifyingGame(selectedGameweek) : false}
                         onChange={handleQualifyingChange}
-                        className="red-checkbox"
+                        style={{
+                            width: '20px',
+                            height: '20px',
+                            cursor: 'pointer',
+                            accentColor: (isQualifyingGame && isQualifyingGame(selectedGameweek)) ? '#28a745' : '#dc3545'
+                        }}
                     />
-                    <span>Qualifying Game</span>
+                    <span style={{
+                        color: (isQualifyingGame && isQualifyingGame(selectedGameweek)) ? '#28a745' : '#dc3545',
+                        fontWeight: 'bold'
+                    }}>
+                        Qualifying Game
+                    </span>
                 </label>
                 <button onClick={() => setShowTotals(!showTotals)}>
                     {showTotals ? 'Hide Totals' : 'Show Totals'}
@@ -844,24 +868,24 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
 
             {showTotals && (
                 <div className="season-totals">
-                    <h3>Season Totals (Qualifying Games Only)</h3>
+                    <h3>Season Totals So Far (Qualifying Games)</h3>
                     {(() => {
-                        const { totalJamesPaid, totalLauriePaid } = calculateSeasonTotals();
+                        const { totalJamesPaid, totalLauriePaid, jamesWins, laurieWins } = calculateSeasonTotals();
                         const netAmount = Math.abs(totalJamesPaid - totalLauriePaid);
                         let message = '';
-                        
+
                         if (totalJamesPaid > totalLauriePaid) {
-                            message = `James has paid £${netAmount} more than Laurie`;
+                            message = `James has paid Laurie £${netAmount} so far`;
                         } else if (totalLauriePaid > totalJamesPaid) {
-                            message = `Laurie has paid £${netAmount} more than James`;
+                            message = `Laurie has paid James £${netAmount} so far`;
                         } else {
-                            message = "Even Stevens!";
+                            message = "Even Stevens so far!";
                         }
-                        
+
                         return (
                             <>
-                                <p>Total James has paid: £{totalJamesPaid}</p>
-                                <p>Total Laurie has paid: £{totalLauriePaid}</p>
+                                <p>Total James has paid: £{totalJamesPaid} ({jamesWins} GW wins)</p>
+                                <p>Total Laurie has paid: £{totalLauriePaid} ({laurieWins} GW wins)</p>
                                 <p className="net-total"><strong>{message}</strong></p>
                             </>
                         );
