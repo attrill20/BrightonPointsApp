@@ -18,7 +18,6 @@ import {
 
 export default function App() {
   const { user, logout } = useAuth();
-  const [data, setData] = useState(null);
   const [mainData, setMainData] = useState(null);
   const [fixturesData, setFixturesData] = useState(null);
   const [activeGameweek, setActiveGameweek] = useState(null);

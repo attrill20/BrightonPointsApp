@@ -655,7 +655,7 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 saveGameweekResult(selectedGameweek, totalPointsJames, totalPointsLaurie, multiplier);
             }
         }
-    }, [gameweekFixture, selectedGameweek, totalPointsJames, totalPointsLaurie, multiplier]);
+    }, [gameweekFixture, selectedGameweek, totalPointsJames, totalPointsLaurie, multiplier, getGameweekResult, saveGameweekResult]);
 
     const togglePlayer = (playerId) => {
         setSelectedPlayers(prev => 
