@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import List from "../List/list";
-import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getAllCaptains,
@@ -13,7 +12,10 @@ import {
   setQualifyingGame as setQualifyingGameDB,
   getAllGameweekResults,
   saveGameweekResult as saveGameweekResultDB,
-  getUserByUsername
+  getUserByUsername,
+  getAllPlayerAssignments,
+  addPlayerAssignment,
+  removePlayerAssignment
 } from '../../supabase/queries';
 
 export default function App() {
@@ -86,6 +88,12 @@ export default function App() {
         // Load gameweek results
         const results = await getAllGameweekResults();
         setGameweekResults(results);
+
+        // Load player assignments
+        const jamesAssignments = await getAllPlayerAssignments(userIds.james);
+        const laurieAssignments = await getAllPlayerAssignments(userIds.laurie);
+        setJamesPlayerNames(jamesAssignments);
+        setLauriePlayerNames(laurieAssignments);
       } catch (error) {
         console.error('Error loading Supabase data:', error);
       }
@@ -178,45 +186,54 @@ export default function App() {
     overflow: "auto",
   };
 
-  const fetchDataFromGoogleSheets = async () => {
-    try {
-        const spreadsheetId = process.env.REACT_APP_SPREADSHEET_ID;
-        const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
-        const sheetName = process.env.REACT_APP_SHEET_NAME;
-  
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}?key=${apiKey}`;
-  
-        const response = await axios.get(url);
-        const data = response.data.values;
-  
-        const jamesPlayerNames = [];
-        const lauriePlayerNames = [];
-  
-        for (let i = 2; i < data.length; i++) {
-            const jamesPlayer = data[i][3]; 
-            const lauriePlayer = data[i][4];
-            const startingGameweek = data[i][1]; 
-            const endingGameweek = data[i][2];
-  
-            if (jamesPlayer) {
-                jamesPlayerNames.push({ name: jamesPlayer.trim(), startingGameweek: Number(startingGameweek), endingGameweek: Number(endingGameweek) });
-            }
-            if (lauriePlayer) {
-                lauriePlayerNames.push({ name: lauriePlayer.trim(), startingGameweek: Number(startingGameweek), endingGameweek: Number(endingGameweek) });
-            }
-        }
-  
-        setJamesPlayerNames(jamesPlayerNames);
-        setLauriePlayerNames(lauriePlayerNames);
-  
-    } catch (error) {
-        console.error('Error fetching data from Google Sheets:', error);
+  const addPlayer = async (username, playerName) => {
+    const userId = userIds[username];
+    if (!userId || !activeGameweek) return;
+
+    const newAssignment = { name: playerName, startingGameweek: activeGameweek, endingGameweek: 99 };
+
+    // Optimistic update
+    if (username === 'james') {
+      setJamesPlayerNames(prev => [...prev, newAssignment]);
+    } else {
+      setLauriePlayerNames(prev => [...prev, newAssignment]);
     }
-};
-  
-  useEffect(() => {
-    fetchDataFromGoogleSheets();
-  }, [mainData]);
+
+    const result = await addPlayerAssignment(userId, playerName, activeGameweek);
+    if (!result.success) {
+      // Revert on failure
+      if (username === 'james') {
+        setJamesPlayerNames(prev => prev.filter(p => !(p.name === playerName && p.startingGameweek === activeGameweek)));
+      } else {
+        setLauriePlayerNames(prev => prev.filter(p => !(p.name === playerName && p.startingGameweek === activeGameweek)));
+      }
+      console.error('Failed to add player:', result.error);
+    }
+  };
+
+  const removePlayer = async (username, playerName) => {
+    const userId = userIds[username];
+    if (!userId || !activeGameweek) return;
+
+    // Optimistic update: set ending_gameweek to activeGameweek for the active assignment
+    const updateAssignment = (prev) =>
+      prev.map(p =>
+        p.name === playerName && p.endingGameweek === 99
+          ? { ...p, endingGameweek: activeGameweek }
+          : p
+      );
+
+    const setter = username === 'james' ? setJamesPlayerNames : setLauriePlayerNames;
+    const prevState = username === 'james' ? jamesPlayerNames : lauriePlayerNames;
+    setter(updateAssignment);
+
+    const result = await removePlayerAssignment(userId, playerName, activeGameweek);
+    if (!result.success) {
+      // Revert on failure
+      setter(prevState);
+      console.error('Failed to remove player:', result.error);
+    }
+  };
 
   const setCaptain = async (gameweek, username, playerId) => {
     // Only allow captain selection for GW22 onwards
@@ -377,6 +394,8 @@ export default function App() {
         saveGameweekResult={saveGameweekResult}
         getGameweekResult={getGameweekResult}
         gameweekResults={gameweekResults}
+        addPlayer={addPlayer}
+        removePlayer={removePlayer}
       />
     </div>
   );

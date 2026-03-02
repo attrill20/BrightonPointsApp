@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import "./list.css";
 import DefensiveProgressBar from '../DefensiveProgressBar/DefensiveProgressBar';
 
@@ -9,7 +9,7 @@ const normalizeString = (str) => {
         .replace(/[\u0300-\u036f]/g, "");
 };
 
-const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames, setCaptain, getCaptain, captainSelections, setMultiplierOverride, getMultiplierOverride, clearMultiplierOverride, setQualifyingGame, isQualifyingGame, qualifyingGames, saveGameweekResult, getGameweekResult, gameweekResults }) => {
+const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames, setCaptain, getCaptain, captainSelections, setMultiplierOverride, getMultiplierOverride, clearMultiplierOverride, setQualifyingGame, isQualifyingGame, qualifyingGames, saveGameweekResult, getGameweekResult, gameweekResults, addPlayer, removePlayer }) => {
     const elements = mainData?.elements || [];
     const [gameweekData, setGameweekData] = useState(null);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
@@ -18,6 +18,54 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     const [showTotals, setShowTotals] = useState(false);
 
     const brightonPlayers = elements.filter(player => player.team === 6);
+
+    // Removal modal state
+    const [removeModal, setRemoveModal] = useState(null); // { playerName, user }
+    const longPressTimer = useRef(null);
+
+    const isCurrentGameweek = selectedGameweek === activeGameweek;
+
+    const handleLongPressStart = useCallback((playerName, user) => {
+        if (!isCurrentGameweek) return;
+        longPressTimer.current = setTimeout(() => {
+            setRemoveModal({ playerName, user });
+        }, 600);
+    }, [isCurrentGameweek]);
+
+    const handleLongPressEnd = useCallback(() => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    }, []);
+
+    const handleConfirmRemove = () => {
+        if (removeModal) {
+            removePlayer(removeModal.user, removeModal.playerName);
+            setRemoveModal(null);
+        }
+    };
+
+    const getAvailablePlayers = () => {
+        const jamesNames = jamesPlayerNames
+            .filter(p => selectedGameweek >= p.startingGameweek && selectedGameweek < p.endingGameweek)
+            .map(p => normalizeString(p.name));
+        const laurieNames = lauriePlayerNames
+            .filter(p => selectedGameweek >= p.startingGameweek && selectedGameweek < p.endingGameweek)
+            .map(p => normalizeString(p.name));
+        const takenNames = [...jamesNames, ...laurieNames];
+        return brightonPlayers
+            .filter(p => !takenNames.includes(normalizeString(p.web_name)))
+            .sort((a, b) => b.total_points - a.total_points);
+    };
+
+    const handleAddPlayer = (user, e) => {
+        const playerName = e.target.value;
+        if (playerName) {
+            addPlayer(user, playerName);
+            e.target.value = '';
+        }
+    };
 
     // State declarations must come before useEffect that uses them
     const [multiplier, setMultiplier] = useState(() => {
@@ -721,7 +769,15 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
             {players.length > 0 ? (
                 <div className="pics-wrapper">
                     {players.map((player, index) => (
-                        <div key={player.code} className="player-pic-container">
+                        <div
+                            key={player.code}
+                            className="player-pic-container"
+                            onMouseDown={() => handleLongPressStart(player.web_name, user)}
+                            onMouseUp={handleLongPressEnd}
+                            onMouseLeave={handleLongPressEnd}
+                            onTouchStart={() => handleLongPressStart(player.web_name, user)}
+                            onTouchEnd={handleLongPressEnd}
+                        >
                             {selectedGameweek >= 22 && isCaptain(user, player.id) && (
                                 <div className="captain-badge">C</div>
                             )}
@@ -799,6 +855,18 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 </div>
             ) : (
                 <p>No players found for {title}</p>
+            )}
+            {isCurrentGameweek && (
+                <div className="add-player-dropdown">
+                    <select onChange={(e) => handleAddPlayer(user, e)} defaultValue="">
+                        <option value="" disabled>+ Add Player</option>
+                        {getAvailablePlayers().map(p => (
+                            <option key={p.id} value={p.web_name}>
+                                {p.web_name} ({p.total_points}pts)
+                            </option>
+                        ))}
+                    </select>
+                </div>
             )}
         </div>
     );
@@ -974,6 +1042,19 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                     user="laurie"
                 />
             </div>
+
+            {removeModal && (
+                <div className="remove-modal-overlay" onClick={() => setRemoveModal(null)}>
+                    <div className="remove-modal" onClick={(e) => e.stopPropagation()}>
+                        <p>Remove <strong>{removeModal.playerName}</strong> from <strong>{removeModal.user}'s</strong> team?</p>
+                        <p className="remove-modal-note">Player will be removed from GW{activeGameweek} onwards</p>
+                        <div className="remove-modal-buttons">
+                            <button className="remove-confirm-btn" onClick={handleConfirmRemove}>Remove</button>
+                            <button className="remove-cancel-btn" onClick={() => setRemoveModal(null)}>Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

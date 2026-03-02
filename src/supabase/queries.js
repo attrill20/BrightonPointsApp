@@ -271,6 +271,68 @@ export async function getAllQualifyingGames() {
   }
 }
 
+// ============ PLAYER ASSIGNMENTS ============
+
+export async function getAllPlayerAssignments(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('player_assignments')
+      .select('player_name, starting_gameweek, ending_gameweek')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    return (data || []).map(({ player_name, starting_gameweek, ending_gameweek }) => ({
+      name: player_name,
+      startingGameweek: starting_gameweek,
+      endingGameweek: ending_gameweek
+    }));
+  } catch (error) {
+    console.error('Get all player assignments error:', error);
+    return [];
+  }
+}
+
+export async function addPlayerAssignment(userId, playerName, startingGameweek) {
+  try {
+    const { data, error } = await supabase
+      .from('player_assignments')
+      .insert([{
+        user_id: userId,
+        player_name: playerName,
+        starting_gameweek: startingGameweek,
+        ending_gameweek: 99
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Add player assignment error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function removePlayerAssignment(userId, playerName, activeGameweek) {
+  try {
+    const { data, error } = await supabase
+      .from('player_assignments')
+      .update({ ending_gameweek: activeGameweek, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('player_name', playerName)
+      .eq('ending_gameweek', 99)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Remove player assignment error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // ============ GAMEWEEK RESULTS ============
 
 export async function saveGameweekResult(gameweek, jamesPoints, lauriePoints, multiplier) {
