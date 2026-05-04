@@ -10,14 +10,24 @@ const normalizeString = (str) => {
 };
 
 const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGameweekChange, jamesPlayerNames, lauriePlayerNames, setCaptain, getCaptain, captainSelections, setMultiplierOverride, getMultiplierOverride, clearMultiplierOverride, setQualifyingGame, isQualifyingGame, qualifyingGames, saveGameweekResult, getGameweekResult, gameweekResults, addPlayer, removePlayer }) => {
-    const elements = mainData?.elements || [];
+    const elements = React.useMemo(() => mainData?.elements || [], [mainData]);
+    const brightonTeamId = mainData?.teams?.find(t => t.short_name === 'BHA')?.id || 6;
     const [gameweekData, setGameweekData] = useState(null);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
-    const [gameweekFixture, setGameweekFixture] = useState(null);
+    const [gameweekFixtures, setGameweekFixtures] = useState([]);
     const [allPlayersCollapsed, setAllPlayersCollapsed] = useState(true);
     const [showTotals, setShowTotals] = useState(false);
+    const [playerHistories, setPlayerHistories] = useState({});
+    const [selectedFixtureIndex, setSelectedFixtureIndex] = useState(0);
+    const fetchedHistoryKeys = useRef(new Set());
 
-    const brightonPlayers = elements.filter(player => player.team === 6);
+    // For DGWs, use the fixture ID as the storage key so 33a and 33b are tracked independently.
+    // Fixture IDs (300+) never collide with GW numbers (1-38).
+    const selectedGwKey = (gameweekFixtures.length > 1 && gameweekFixtures[selectedFixtureIndex])
+        ? gameweekFixtures[selectedFixtureIndex].id
+        : selectedGameweek;
+
+    const brightonPlayers = elements.filter(player => player.team === brightonTeamId);
 
     // Removal modal state
     const [removeModal, setRemoveModal] = useState(null); // { playerName, user }
@@ -105,51 +115,48 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
       ];
 
     useEffect(() => {
-        if (Array.isArray(fixturesData)) { 
-            const fixture = fixturesData.find(
+        setSelectedFixtureIndex(0);
+    }, [selectedGameweek]);
+
+    useEffect(() => {
+        if (Array.isArray(fixturesData)) {
+            const fixtures = fixturesData.filter(
                 (fixture) =>
                     fixture.event === selectedGameweek &&
-                    (fixture.team_h === 6 || fixture.team_a === 6)
+                    (fixture.team_h === brightonTeamId || fixture.team_a === brightonTeamId)
             );
-    
-            if (fixture) {
-                setGameweekFixture(fixture);
-            } else {
-                setGameweekFixture(null);
-            }
+            setGameweekFixtures(fixtures);
         } else {
-            setGameweekFixture(null);
+            setGameweekFixtures([]);
         }
-    }, [fixturesData, selectedGameweek]);
+    }, [fixturesData, selectedGameweek, brightonTeamId]);
 
-    // Load saved multiplier override when gameweek changes
+    // Load saved multiplier override when gameweek or fixture tab changes
     useEffect(() => {
-        if (selectedGameweek && getMultiplierOverride) {
-            const savedOverride = getMultiplierOverride(selectedGameweek);
+        if (selectedGwKey && getMultiplierOverride) {
+            const savedOverride = getMultiplierOverride(selectedGwKey);
             if (savedOverride) {
                 setMultiplier(savedOverride);
-                setHasLocalOverride(false); // Reset local override flag when loading saved
+                setHasLocalOverride(false);
             } else {
-                setHasLocalOverride(false); // No saved override, allow auto-set
+                setHasLocalOverride(false);
             }
         }
-    }, [selectedGameweek, getMultiplierOverride]);
+    }, [selectedGwKey, getMultiplierOverride]);
 
-    // Auto-set multiplier based on home/away fixture
+    // Auto-set multiplier based on whether Brighton is home or away in the selected fixture
     useEffect(() => {
-        const savedOverride = getMultiplierOverride ? getMultiplierOverride(selectedGameweek) : null;
-        
-        if (gameweekFixture && !hasLocalOverride && !savedOverride) {
-            // Brighton is team 6
-            if (gameweekFixture.team_h === 6) {
-                // Brighton is home
+        const savedOverride = getMultiplierOverride ? getMultiplierOverride(selectedGwKey) : null;
+        const fixture = gameweekFixtures[selectedFixtureIndex];
+
+        if (fixture && !hasLocalOverride && !savedOverride) {
+            if (fixture.team_h === brightonTeamId) {
                 setMultiplier(2);
-            } else if (gameweekFixture.team_a === 6) {
-                // Brighton is away
+            } else if (fixture.team_a === brightonTeamId) {
                 setMultiplier(3);
             }
         }
-    }, [gameweekFixture, hasLocalOverride, selectedGameweek, getMultiplierOverride]);
+    }, [gameweekFixtures, selectedFixtureIndex, hasLocalOverride, selectedGameweek, selectedGwKey, getMultiplierOverride, brightonTeamId]);
 
     const playersForJames = brightonPlayers
     .filter(player => {
@@ -211,6 +218,39 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         fetchGameweekData();
     }, [selectedGameweek]);
 
+    // Fetch per-fixture element-summary data for past gameweeks
+    useEffect(() => {
+        if (!selectedGameweek || selectedGameweek === activeGameweek || !elements.length) return;
+
+        const allAssignments = [
+            ...jamesPlayerNames.filter(p => selectedGameweek >= p.startingGameweek && selectedGameweek < p.endingGameweek),
+            ...lauriePlayerNames.filter(p => selectedGameweek >= p.startingGameweek && selectedGameweek < p.endingGameweek)
+        ];
+
+        const playerIds = [...new Set(
+            allAssignments
+                .map(a => elements.find(el => normalizeString(el.web_name) === normalizeString(a.name))?.id)
+                .filter(Boolean)
+        )];
+
+        playerIds.forEach(playerId => {
+            const cacheKey = `${playerId}_${selectedGameweek}`;
+            if (fetchedHistoryKeys.current.has(cacheKey)) return;
+            fetchedHistoryKeys.current.add(cacheKey);
+
+            fetch(`https://fpl-server-nine.vercel.app/api?endpoint=element-summary/${playerId}/`)
+                .then(r => r.json())
+                .then(data => {
+                    const fixtureHistory = data.history.filter(h => h.round === selectedGameweek);
+                    setPlayerHistories(prev => ({ ...prev, [cacheKey]: fixtureHistory }));
+                })
+                .catch(error => {
+                    console.error(`Failed to fetch history for player ${playerId}:`, error);
+                    setPlayerHistories(prev => ({ ...prev, [cacheKey]: [] }));
+                });
+        });
+    }, [selectedGameweek, activeGameweek, jamesPlayerNames, lauriePlayerNames, elements]);
+
     // const getPlayerPoints = (playerId) => {
     //     if (selectedGameweek === activeGameweek) {
     //         const player = elements.find(player => player.id === playerId);
@@ -225,7 +265,101 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     //     return 0;
     // };
 
+    // Returns summed stats across all fixtures for a past GW player, or falls back to gameweekData
+    const getEffectivePlayerStats = (playerId) => {
+        if (selectedGameweek !== activeGameweek) {
+            const histories = playerHistories[`${playerId}_${selectedGameweek}`];
+            if (histories && histories.length > 0) {
+                const targetFixture = gameweekFixtures[selectedFixtureIndex];
+                const relevant = targetFixture
+                    ? histories.filter(h => h.fixture === targetFixture.id)
+                    : histories;
+                if (relevant.length === 0) return { stats: { minutes: 0, goals_scored: 0, assists: 0, clean_sheets: 0, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 0, bps: 0, defensive_contribution: 0 } };
+                const summed = relevant.reduce((acc, h) => ({
+                    minutes: acc.minutes + h.minutes,
+                    goals_scored: acc.goals_scored + h.goals_scored,
+                    assists: acc.assists + h.assists,
+                    clean_sheets: acc.clean_sheets + h.clean_sheets,
+                    goals_conceded: acc.goals_conceded + h.goals_conceded,
+                    own_goals: acc.own_goals + h.own_goals,
+                    penalties_saved: acc.penalties_saved + h.penalties_saved,
+                    penalties_missed: acc.penalties_missed + h.penalties_missed,
+                    yellow_cards: acc.yellow_cards + h.yellow_cards,
+                    red_cards: acc.red_cards + h.red_cards,
+                    saves: acc.saves + h.saves,
+                    bonus: acc.bonus + h.bonus,
+                    bps: acc.bps + h.bps,
+                    defensive_contribution: acc.defensive_contribution + h.defensive_contribution,
+                }), {
+                    minutes: 0, goals_scored: 0, assists: 0, clean_sheets: 0, goals_conceded: 0,
+                    own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0,
+                    red_cards: 0, saves: 0, bonus: 0, bps: 0, defensive_contribution: 0
+                });
+                return { stats: summed };
+            }
+        }
+        if (gameweekData) {
+            return gameweekData.elements.find(p => p.id === playerId) || null;
+        }
+        return null;
+    };
+
+    // Calculates points for a single fixture's stats (used for per-fixture accuracy in DGWs)
+    const calcPointsFromFixtureStats = (player, stats) => {
+        const minutes = stats.minutes;
+        const minutesPoints = minutes === 0 ? 0 : minutes < 60 ? 1 : 2;
+
+        let goalsPoints = 0;
+        if (stats.goals_scored > 0) {
+            const pts = player.element_type <= 2 ? 6 : player.element_type === 3 ? 5 : 4;
+            goalsPoints = stats.goals_scored * pts;
+        }
+
+        const assistsPoints = stats.assists * 3;
+
+        let cleanSheetPoints = 0;
+        if (stats.clean_sheets > 0) {
+            if (player.element_type <= 2) cleanSheetPoints = 4;
+            else if (player.element_type === 3) cleanSheetPoints = 1;
+        }
+
+        const penaltySavesPoints = stats.penalties_saved * 5;
+        const savesPoints = Math.floor(stats.saves / 3);
+        const ownGoalsPoints = stats.own_goals * -2;
+        const penaltiesMissedPoints = stats.penalties_missed * -2;
+
+        const goalsConcededPoints = player.element_type <= 2
+            ? -Math.floor(stats.goals_conceded / 2)
+            : 0;
+
+        const yellowCardsPoints = stats.yellow_cards * -1;
+        const redCardsPoints = stats.red_cards * -3;
+        const bonusPoints = stats.bonus;
+
+        const defensiveContributionPoints = player.element_type !== 1 && minutes > 0
+            ? (stats.defensive_contribution >= (player.element_type === 2 ? 10 : 12) ? 2 : 0)
+            : 0;
+
+        return minutesPoints + goalsPoints + assistsPoints + cleanSheetPoints + penaltySavesPoints +
+               savesPoints + ownGoalsPoints + penaltiesMissedPoints + goalsConcededPoints +
+               yellowCardsPoints + redCardsPoints + bonusPoints + defensiveContributionPoints;
+    };
+
     const getPlayerPoints = (playerId) => {
+        // Past GW with element-summary data — calculate for the selected fixture only
+        if (selectedGameweek !== activeGameweek) {
+            const histories = playerHistories[`${playerId}_${selectedGameweek}`];
+            if (histories && histories.length > 0) {
+                const player = elements.find(p => p.id === playerId);
+                if (!player) return 0;
+                const targetFixture = gameweekFixtures[selectedFixtureIndex];
+                const relevant = targetFixture
+                    ? histories.filter(h => h.fixture === targetFixture.id)
+                    : histories;
+                return relevant.reduce((sum, stats) => sum + calcPointsFromFixtureStats(player, stats), 0);
+            }
+        }
+
         if (selectedGameweek === activeGameweek) {
             const player = elements.find(player => player.id === playerId);
             if (player) {
@@ -240,16 +374,16 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 const goalsConcededPoints = getGoalsConcededPoints(playerId);
                 const yellowCardsPoints = getYellowCardsPoints(playerId);
                 const redCardsPoints = getRedCardsPoints(playerId);
-                const bpsPoints = calculateFallbackBonusPoints(playerId, gameweekFixture, elements);
+                const bpsPoints = gameweekFixtures.reduce((sum, fix) => sum + calculateFallbackBonusPoints(playerId, fix, elements), 0);
                 const defensiveContributionPoints = getDefensiveContributionPoints(playerId);
-                
-                return minutesPoints + goalsPoints + assistsPoints + cleanSheetPoints + penaltySavesPoints + 
-                       savesPoints + ownGoalsPoints + penaltiesMissedPoints + goalsConcededPoints + 
+
+                return minutesPoints + goalsPoints + assistsPoints + cleanSheetPoints + penaltySavesPoints +
+                       savesPoints + ownGoalsPoints + penaltiesMissedPoints + goalsConcededPoints +
                        yellowCardsPoints + redCardsPoints + bpsPoints + defensiveContributionPoints;
             }
             return 0;
         }
-    
+
         if (gameweekData) {
             const playerStats = gameweekData.elements.find(player => player.id === playerId);
             if (playerStats) {
@@ -264,7 +398,7 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 const goalsConcededPoints = getGoalsConcededPoints(playerId);
                 const yellowCardsPoints = getYellowCardsPoints(playerId);
                 const redCardsPoints = getRedCardsPoints(playerId);
-                const bpsPoints = calculateFallbackBonusPoints(playerId, gameweekFixture, elements);
+                const bpsPoints = gameweekFixtures.reduce((sum, fix) => sum + calculateFallbackBonusPoints(playerId, fix, elements), 0);
                 const defensiveContributionPoints = getDefensiveContributionPoints(playerId);
                 
                 return minutesPoints + goalsPoints + assistsPoints + cleanSheetPoints + penaltySavesPoints + 
@@ -278,10 +412,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerMinutes = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.minutes : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.minutes : 0;
     };
 
     const getMinutesPoints = (playerId) => {
@@ -293,10 +425,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerGoals = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.goals_scored : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.goals_scored : 0;
     };
 
     const getGoalsPoints = (playerId) => {
@@ -326,10 +456,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
     
     const getPlayerAssists = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.assists : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.assists : 0;
     };
 
     const getAssistsPoints = (playerId) => {
@@ -342,10 +470,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerCleanSheets = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.clean_sheets : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.clean_sheets : 0;
     };
 
     const getCleanSheetPoints = (playerId) => {
@@ -372,10 +498,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerPenaltySaves = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.penalties_saved : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.penalties_saved : 0;
     };
 
     const getPenaltySavesPoints = (playerId) => {
@@ -388,10 +512,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerSaves = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.saves : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.saves : 0;
     };
 
     const getSavesPoints = (playerId) => {
@@ -406,10 +528,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerOwnGoals = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.own_goals : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.own_goals : 0;
     };
 
     const getOwnGoalsPoints = (playerId) => {
@@ -422,10 +542,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerPenaltiesMissed = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.penalties_missed : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.penalties_missed : 0;
     };
 
     const getPenaltiesMissedPoints = (playerId) => {
@@ -438,10 +556,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerGoalsConceded = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.goals_conceded : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.goals_conceded : 0;
     };
 
     const getGoalsConcededPoints = (playerId) => {
@@ -465,10 +581,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerYellowCards = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.yellow_cards : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.yellow_cards : 0;
     };
 
     const getYellowCardsPoints = (playerId) => {
@@ -481,18 +595,13 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerRedCards = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.red_cards : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.red_cards : 0;
     };
 
     const getPlayerDefensiveContribution = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.defensive_contribution : 0;
-        }
-        return 0;
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.defensive_contribution : 0;
     };
 
     const getDefensiveContributionPoints = (playerId) => {
@@ -522,10 +631,8 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     };
 
     const getPlayerBPS = (playerId) => {
-        if (gameweekData) {
-            const playerStats = gameweekData.elements.find(player => player.id === playerId);
-            return playerStats ? playerStats.stats.bps : 0;
-        }
+        const ps = getEffectivePlayerStats(playerId);
+        return ps ? ps.stats.bps : 0;
     };
 
     function calculateFallbackBonusPoints(playerId, gameweekFixture, elements) {
@@ -533,6 +640,10 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         if (!gameweekData || !gameweekData.elements) {
             console.error('gameweekData or gameweekData.elements is null');
             return 0; // Return a default value in case of missing data
+        }
+
+        if (!gameweekFixture) {
+            return 0;
         }
     
         const topPlayers = gameweekData.elements
@@ -596,15 +707,15 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         if (value === "") {
             setMultiplier(null);
             if (clearMultiplierOverride) {
-                clearMultiplierOverride(selectedGameweek);
+                clearMultiplierOverride(selectedGwKey);
             }
         } else {
             const numberValue = Number(value);
             if (numberValue > 0) {
                 setMultiplier(numberValue);
-                setHasLocalOverride(true); // User has manually changed it
+                setHasLocalOverride(true);
                 if (setMultiplierOverride) {
-                    setMultiplierOverride(selectedGameweek, numberValue);
+                    setMultiplierOverride(selectedGwKey, numberValue);
                 }
             }
         }
@@ -631,25 +742,25 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         setMultiplier(newValue);
         setHasLocalOverride(true);
         if (setMultiplierOverride) {
-            setMultiplierOverride(selectedGameweek, newValue);
+            setMultiplierOverride(selectedGwKey, newValue);
         }
     };
-    
+
     const handleMultiplierDecrement = () => {
         const newValue = Math.max(multiplier - 1, 1);
         setMultiplier(newValue);
         setHasLocalOverride(true);
         if (setMultiplierOverride) {
-            setMultiplierOverride(selectedGameweek, newValue);
+            setMultiplierOverride(selectedGwKey, newValue);
         }
     };
 
     const canSelectCaptain = (gameweek) => {
         if (gameweek < 22) return false;
         
-        // Check if fixture has started
-        if (gameweekFixture) {
-            const kickoffTime = new Date(gameweekFixture.kickoff_time);
+        // Check if first fixture has started
+        if (gameweekFixtures.length > 0) {
+            const kickoffTime = new Date(gameweekFixtures[0].kickoff_time);
             const now = new Date();
             return now < kickoffTime;
         }
@@ -693,17 +804,17 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
 
     // Auto-save gameweek results when fixture is finished
     useEffect(() => {
-        if (gameweekFixture && gameweekFixture.finished && saveGameweekResult) {
+        if (gameweekFixtures.length === 1 && gameweekFixtures[0].finished && saveGameweekResult) {
             // Save the results (only if they don't exist or have changed)
-            const existingResult = getGameweekResult ? getGameweekResult(selectedGameweek) : null;
+            const existingResult = getGameweekResult ? getGameweekResult(selectedGwKey) : null;
             if (!existingResult ||
                 existingResult.jamesPoints !== totalPointsJames ||
                 existingResult.lauriePoints !== totalPointsLaurie ||
                 existingResult.multiplier !== multiplier) {
-                saveGameweekResult(selectedGameweek, totalPointsJames, totalPointsLaurie, multiplier);
+                saveGameweekResult(selectedGwKey, totalPointsJames, totalPointsLaurie, multiplier);
             }
         }
-    }, [gameweekFixture, selectedGameweek, totalPointsJames, totalPointsLaurie, multiplier, getGameweekResult, saveGameweekResult]);
+    }, [gameweekFixtures, selectedGameweek, selectedGwKey, totalPointsJames, totalPointsLaurie, multiplier, getGameweekResult, saveGameweekResult]);
 
     const togglePlayer = (playerId) => {
         setSelectedPlayers(prev => 
@@ -723,7 +834,7 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
 
     const handleQualifyingChange = () => {
         if (setQualifyingGame) {
-            setQualifyingGame(selectedGameweek, !isQualifyingGame(selectedGameweek));
+            setQualifyingGame(selectedGwKey, !isQualifyingGame(selectedGwKey));
         }
     };
 
@@ -733,13 +844,18 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
         let jamesWins = 0;
         let laurieWins = 0;
 
-        // Calculate for all gameweeks that are marked as qualifying UP TO the selected gameweek
+        // Calculate for all gameweeks/fixtures that are marked as qualifying UP TO the selected gameweek
         Object.keys(qualifyingGames || {}).forEach(gwKey => {
             if (qualifyingGames[gwKey]) {
-                const gw = parseInt(gwKey.replace('gw', ''));
+                const key = parseInt(gwKey.replace('gw', ''));
+
+                // Keys > 38 are fixture IDs (DGW sub-fixtures) — resolve to their GW event number
+                const gwEvent = key <= 38
+                    ? key
+                    : (Array.isArray(fixturesData) ? fixturesData.find(f => f.id === key)?.event : null) || 0;
 
                 // Only include gameweeks up to and including the selected gameweek
-                if (gw <= selectedGameweek) {
+                if (gwEvent > 0 && gwEvent <= selectedGameweek) {
                     // Get the gameweek result for this gameweek
                     const result = gameweekResults?.[gwKey];
 
@@ -836,8 +952,16 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                                     )}
                                     {getPlayerMinutes(player.id) !== 0 && (
                                         <p>
-                                            BPS: {getPlayerBPS(player.id)} <strong className={calculateFallbackBonusPoints(player.id, gameweekFixture, elements) > 0 ? 'positive-stat' : ''}>
-                                                [{calculateFallbackBonusPoints(player.id, gameweekFixture, elements)}]
+                                            BPS: {getPlayerBPS(player.id)} <strong className={
+                                                (selectedGameweek !== activeGameweek
+                                                    ? (getEffectivePlayerStats(player.id)?.stats.bonus || 0)
+                                                    : gameweekFixtures.reduce((sum, fix) => sum + calculateFallbackBonusPoints(player.id, fix, elements), 0)
+                                                ) > 0 ? 'positive-stat' : ''
+                                            }>
+                                                [{selectedGameweek !== activeGameweek
+                                                    ? (getEffectivePlayerStats(player.id)?.stats.bonus || 0)
+                                                    : gameweekFixtures.reduce((sum, fix) => sum + calculateFallbackBonusPoints(player.id, fix, elements), 0)
+                                                }]
                                             </strong>
                                         </p>
                                     )}
@@ -913,17 +1037,17 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 <label className="qualifying-checkbox">
                     <input
                         type="checkbox"
-                        checked={isQualifyingGame ? isQualifyingGame(selectedGameweek) : false}
+                        checked={isQualifyingGame ? isQualifyingGame(selectedGwKey) : false}
                         onChange={handleQualifyingChange}
                         style={{
                             width: '20px',
                             height: '20px',
                             cursor: 'pointer',
-                            accentColor: (isQualifyingGame && isQualifyingGame(selectedGameweek)) ? '#28a745' : '#dc3545'
+                            accentColor: (isQualifyingGame && isQualifyingGame(selectedGwKey)) ? '#28a745' : '#dc3545'
                         }}
                     />
                     <span style={{
-                        color: (isQualifyingGame && isQualifyingGame(selectedGameweek)) ? '#28a745' : '#dc3545',
+                        color: (isQualifyingGame && isQualifyingGame(selectedGwKey)) ? '#28a745' : '#dc3545',
                         fontWeight: 'bold'
                     }}>
                         Qualifying Game
@@ -961,70 +1085,79 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
                 </div>
             )}
 
-            {gameweekFixture ? (
+            {gameweekFixtures.length > 0 ? (
             <div className="fixture-display">
-                <p className="fixture-names">
-                    {gameweekFixture.team_h_score !== null && gameweekFixture.team_a_score !== null
-                        ? `${teams.find(team => team.id === gameweekFixture.team_h)?.name || "Unknown"} (${gameweekFixture.team_h_score}) v ${teams.find(team => team.id === gameweekFixture.team_a)?.name || "Unknown"} (${gameweekFixture.team_a_score})`
-                        : `${teams.find(team => team.id === gameweekFixture.team_h)?.name || "Unknown"} v ${teams.find(team => team.id === gameweekFixture.team_a)?.name || "Unknown"}`}
-                </p>
-                <p className="fixture-names">
-                    {new Date(gameweekFixture.kickoff_time).toLocaleDateString()}{" "}
-                    {new Date(gameweekFixture.kickoff_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '')}
-                </p>
-
-                
-                <div className="top-players">
-                    <p className = "fixture-names">
-                        {gameweekData && gameweekData.elements ? (
-                            (() => {
-                                const topPlayers = gameweekData.elements
-                                    .filter(player =>
-                                        [gameweekFixture.team_h, gameweekFixture.team_a].includes(
-                                            elements.find(el => el.id === player.id)?.team
-                                        )
-                                    )
-                                    .sort((a, b) => b.stats.bps - a.stats.bps)
-                                    .slice(0, 3);
-
-                                const allZeroBPS = topPlayers.every(player => player.stats.bps === 0);
-
-                                if (allZeroBPS) {
-                                    return "BPS: No BPS data available yet!";
-                                }
-
-                                return (
-                                    "BPS: " +
-                                    topPlayers
-                                        .map(player => {
-                                            const playerData = elements.find(el => el.id === player.id);
-                                            return playerData
-                                                ? `${playerData.web_name} (${player.stats.bps})`
-                                                : "Unknown Player";
-                                        })
-                                        .join(", ")
-                                );
-                            })()
-                        ) : (
-                            "No data available"
-                        )}
+                {gameweekFixtures.length > 1 && (
+                    <div className="fixture-selector">
+                        {gameweekFixtures.map((_, i) => (
+                            <button
+                                key={i}
+                                className={`fixture-tab${selectedFixtureIndex === i ? ' active' : ''}`}
+                                onClick={() => { setSelectedFixtureIndex(i); setHasLocalOverride(false); }}
+                            >
+                                GW{selectedGameweek}{i === 0 ? 'a' : 'b'}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                {(() => {
+                    const fixture = gameweekFixtures[selectedFixtureIndex];
+                    if (!fixture) return null;
+                    return (
+                        <>
+                            <p className="fixture-names">
+                                {fixture.team_h_score !== null && fixture.team_a_score !== null
+                                    ? `${teams.find(t => t.id === fixture.team_h)?.name || "Unknown"} (${fixture.team_h_score}) v ${teams.find(t => t.id === fixture.team_a)?.name || "Unknown"} (${fixture.team_a_score})`
+                                    : `${teams.find(t => t.id === fixture.team_h)?.name || "Unknown"} v ${teams.find(t => t.id === fixture.team_a)?.name || "Unknown"}`}
+                            </p>
+                            <p className="fixture-names">
+                                {new Date(fixture.kickoff_time).toLocaleDateString()}{" "}
+                                {new Date(fixture.kickoff_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '')}
+                            </p>
+                            <div className="top-players">
+                                <p className="fixture-names">
+                                    {gameweekData && gameweekData.elements ? (
+                                        (() => {
+                                            const topPlayers = gameweekData.elements
+                                                .filter(player =>
+                                                    [fixture.team_h, fixture.team_a].includes(
+                                                        elements.find(el => el.id === player.id)?.team
+                                                    )
+                                                )
+                                                .sort((a, b) => b.stats.bps - a.stats.bps)
+                                                .slice(0, 3);
+                                            const allZeroBPS = topPlayers.every(player => player.stats.bps === 0);
+                                            if (allZeroBPS) return "BPS: No BPS data available yet!";
+                                            return "BPS: " + topPlayers
+                                                .map(player => {
+                                                    const playerData = elements.find(el => el.id === player.id);
+                                                    return playerData ? `${playerData.web_name} (${player.stats.bps})` : "Unknown Player";
+                                                })
+                                                .join(", ");
+                                        })()
+                                    ) : "No data available"}
+                                </p>
+                            </div>
+                        </>
+                    );
+                })()}
+                {selectedGameweek >= 22 && (
+                    <p className="captain-summary">
+                        Captains: James - {getCaptain(selectedGameweek, 'james') ?
+                            brightonPlayers.find(p => p.id === getCaptain(selectedGameweek, 'james'))?.web_name || 'Unknown'
+                            : 'Not selected'}
+                        {' | '}
+                        Laurie - {getCaptain(selectedGameweek, 'laurie') ?
+                            brightonPlayers.find(p => p.id === getCaptain(selectedGameweek, 'laurie'))?.web_name || 'Unknown'
+                            : 'Not selected'}
+                        {gameweekFixtures.length > 0 && !canSelectCaptain(selectedGameweek) && ' (Locked)'}
                     </p>
-                    {selectedGameweek >= 22 && (
-                        <p className="captain-summary">
-                            Captains: James - {getCaptain(selectedGameweek, 'james') ? 
-                                brightonPlayers.find(p => p.id === getCaptain(selectedGameweek, 'james'))?.web_name || 'Unknown' 
-                                : 'Not selected'} 
-                            {' | '}
-                            Laurie - {getCaptain(selectedGameweek, 'laurie') ? 
-                                brightonPlayers.find(p => p.id === getCaptain(selectedGameweek, 'laurie'))?.web_name || 'Unknown' 
-                                : 'Not selected'}
-                            {gameweekFixture && !canSelectCaptain(selectedGameweek) && ' (Locked)'}
-                        </p>
-                    )}
-                </div>
+                )}
             </div>
             ) : (
-                <p>No Brighton fixture in GW {selectedGameweek}</p>
+                <div className="fixture-display">
+                    <p className="fixture-names">No Brighton fixture in GW {selectedGameweek}</p>
+                </div>
             )}
 
             <div className="player-columns">
