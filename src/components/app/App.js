@@ -124,6 +124,12 @@ export default function App() {
         if (activeEvent) {
           setActiveGameweek(activeEvent.id);
           setSelectedGameweek(activeEvent.id);
+        } else {
+          // Season over - all GWs finished, default to last GW
+          const lastEvent = bootstrapData.events[bootstrapData.events.length - 1];
+          if (lastEvent) {
+            setSelectedGameweek(lastEvent.id);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
