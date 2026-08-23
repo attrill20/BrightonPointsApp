@@ -85,34 +85,7 @@ const List = ({ mainData, fixturesData, activeGameweek, selectedGameweek, onGame
     });
     const [hasLocalOverride, setHasLocalOverride] = useState(false);
 
-    const teams = [
-        { id: 0, name: "Blank", initial: "NULL", h_diff: 11, a_diff: 11 },
-        { id: 1, name: "Arsenal", initial: "ARS", h_diff: 8, a_diff: 9, code: 3 },
-        { id: 2, name: "Aston Villa", initial: "AVL", h_diff: 5, a_diff: 10, code: 7 },
-        { id: 3, name: "Burnley", initial: "BUR", h_diff: 2, a_diff: 1 },
-        { id: 4, name: "Bournemouth", initial: "BOU", h_diff: 4, a_diff: 4, code: 91 },
-        { id: 5, name: "Brentford", initial: "BRE", h_diff: 3, a_diff: 6, code: 94 },
-        { id: 6, name: "Brighton", initial: "BHA", h_diff: 5, a_diff: 7, code: 36 },
-        { id: 7, name: "Chelsea", initial: "CHE", h_diff: 5, a_diff: 4, code: 8 },
-        { id: 8, name: "Crystal Palace", initial: "CRY",  h_diff: 5, a_diff: 2, code: 31 },
-        { id: 9, name: "Everton", initial: "EVE", h_diff: 6, a_diff: 3, code: 11 },
-        { id: 10, name: "Fulham", initial: "FUL", h_diff: 3, a_diff: 6, code: 54 },
-        // { id: 10, name: "Ipswich", initial: "IPS", h_diff: 3, a_diff: 6, code: 40 },
-        // { id: 11, name: "Leicester", initial: "LEI", h_diff: 3, a_diff: 6, code: 13 },
-        { id: 11, name: "Leeds United", initial: "LEE",},
-        { id: 12, name: "Liverpool", initial: "LIV", h_diff: 7, a_diff: 10, code: 14 },
-        // { id: 13, name: "Luton", initial: "LUT", h_diff: 2, a_diff: 2 },
-        { id: 13, name: "Man City", initial: "MCI", h_diff: 7, a_diff: 9, code: 43 },
-        { id: 14, name: "Man United", initial: "MUN", h_diff: 6, a_diff: 6, code: 1 },
-        { id: 15, name: "Newcastle", initial: "NEW", h_diff: 3, a_diff: 9, code: 4 },
-        { id: 16, name: "Notts Forest", initial: "NFO", h_diff: 2, a_diff: 4, code: 17 },
-        { id: 17, name: "Sunderland", initial: "SUN", h_diff: 3, a_diff: 6, code: 20 },
-        // { id: 17, name: "Southampton", initial: "SOU", h_diff: 3, a_diff: 6, code: 20 },
-        // { id: 17, name: "Sheffield Utd", initial: "SHU", h_diff: 1, a_diff: 4 },
-        { id: 18, name: "Spurs", initial: "TOT", h_diff: 7, a_diff: 6, code: 6 },
-        { id: 19, name: "West Ham", initial: "WHU", h_diff: 6, a_diff: 5, code: 21 },
-        { id: 20, name: "Wolves", initial: "WOL", h_diff: 3, a_diff: 5, code: 39 },
-      ];
+    const teams = mainData?.teams || [];
 
     useEffect(() => {
         setSelectedFixtureIndex(0);

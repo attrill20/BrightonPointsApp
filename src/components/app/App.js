@@ -18,6 +18,18 @@ import {
   removePlayerAssignment
 } from '../../supabase/queries';
 
+// FPL gameweek numbers (1-38) reset every season, so all season-scoped data
+// (results, qualifying flags, captains, squads) is keyed by this label to
+// keep seasons from colliding. Derived from GW1's real kickoff date rather
+// than today's date, so it stays correct even if the app isn't opened until
+// mid-season.
+function getSeasonLabel(events) {
+  const gw1 = events?.find(event => event.id === 1);
+  if (!gw1) return null;
+  const startYear = new Date(gw1.deadline_time).getUTCFullYear();
+  return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
+}
+
 export default function App() {
   const { user, logout } = useAuth();
   const [mainData, setMainData] = useState(null);
@@ -32,6 +44,7 @@ export default function App() {
   const [qualifyingGames, setQualifyingGames] = useState({});
   const [gameweekResults, setGameweekResults] = useState({});
   const [userIds, setUserIds] = useState({ james: null, laurie: null });
+  const [currentSeason, setCurrentSeason] = useState(null);
 
   // Fetch user IDs from Supabase on mount
   useEffect(() => {
@@ -54,12 +67,12 @@ export default function App() {
   // Load all data from Supabase when user IDs are available
   useEffect(() => {
     async function loadSupabaseData() {
-      if (!userIds.james || !userIds.laurie) return;
+      if (!userIds.james || !userIds.laurie || !currentSeason) return;
 
       try {
         // Load all captains for both users
-        const jamesCaptains = await getAllCaptains(userIds.james);
-        const laurieCaptains = await getAllCaptains(userIds.laurie);
+        const jamesCaptains = await getAllCaptains(userIds.james, currentSeason);
+        const laurieCaptains = await getAllCaptains(userIds.laurie, currentSeason);
 
         // Merge captain selections
         const mergedCaptains = {};
@@ -78,20 +91,20 @@ export default function App() {
         setCaptainSelections(mergedCaptains);
 
         // Load multiplier overrides
-        const multipliers = await getAllMultiplierOverrides();
+        const multipliers = await getAllMultiplierOverrides(currentSeason);
         setMultiplierOverrides(multipliers);
 
         // Load qualifying games
-        const qualifying = await getAllQualifyingGames();
+        const qualifying = await getAllQualifyingGames(currentSeason);
         setQualifyingGames(qualifying);
 
         // Load gameweek results
-        const results = await getAllGameweekResults();
+        const results = await getAllGameweekResults(currentSeason);
         setGameweekResults(results);
 
         // Load player assignments
-        const jamesAssignments = await getAllPlayerAssignments(userIds.james);
-        const laurieAssignments = await getAllPlayerAssignments(userIds.laurie);
+        const jamesAssignments = await getAllPlayerAssignments(userIds.james, currentSeason);
+        const laurieAssignments = await getAllPlayerAssignments(userIds.laurie, currentSeason);
         setJamesPlayerNames(jamesAssignments);
         setLauriePlayerNames(laurieAssignments);
       } catch (error) {
@@ -100,7 +113,7 @@ export default function App() {
     }
 
     loadSupabaseData();
-  }, [userIds]);
+  }, [userIds, currentSeason]);
 
   useEffect(() => {
     async function fetchFPL() {
@@ -119,6 +132,7 @@ export default function App() {
 
         setMainData(bootstrapData);
         setFixturesData(fixturesData);
+        setCurrentSeason(getSeasonLabel(bootstrapData.events));
 
         const activeEvent = bootstrapData.events.find(event => !event.finished);
         if (activeEvent) {
@@ -205,7 +219,7 @@ export default function App() {
       setLauriePlayerNames(prev => [...prev, newAssignment]);
     }
 
-    const result = await addPlayerAssignment(userId, playerName, activeGameweek);
+    const result = await addPlayerAssignment(userId, playerName, activeGameweek, currentSeason);
     if (!result.success) {
       // Revert on failure
       if (username === 'james') {
@@ -233,7 +247,7 @@ export default function App() {
     const prevState = username === 'james' ? jamesPlayerNames : lauriePlayerNames;
     setter(updateAssignment);
 
-    const result = await removePlayerAssignment(userId, playerName, activeGameweek);
+    const result = await removePlayerAssignment(userId, playerName, activeGameweek, currentSeason);
     if (!result.success) {
       // Revert on failure
       setter(prevState);
@@ -262,7 +276,7 @@ export default function App() {
     }));
 
     // Sync to Supabase
-    await setCaptainDB(userId, gameweek, playerId);
+    await setCaptainDB(userId, gameweek, playerId, currentSeason);
   };
 
   const getCaptain = (gameweek, user) => {
@@ -291,7 +305,7 @@ export default function App() {
     }));
 
     // Sync to Supabase
-    await setMultiplierOverrideDB(gameweek, multiplier);
+    await setMultiplierOverrideDB(gameweek, multiplier, currentSeason);
   };
 
   const getMultiplierOverride = (gameweek) => {
@@ -307,7 +321,7 @@ export default function App() {
     });
 
     // Sync to Supabase
-    await clearMultiplierOverrideDB(gameweek);
+    await clearMultiplierOverrideDB(gameweek, currentSeason);
   };
 
   const setQualifyingGame = async (gameweek, isQualifying) => {
@@ -318,7 +332,7 @@ export default function App() {
     }));
 
     // Sync to Supabase
-    await setQualifyingGameDB(gameweek, isQualifying);
+    await setQualifyingGameDB(gameweek, isQualifying, currentSeason);
   };
 
   const isQualifyingGame = (gameweek) => {
@@ -342,7 +356,7 @@ export default function App() {
     }));
 
     // Sync to Supabase
-    await saveGameweekResultDB(gameweek, jamesPoints, lauriePoints, multiplier);
+    await saveGameweekResultDB(gameweek, jamesPoints, lauriePoints, multiplier, currentSeason);
   };
 
   const getGameweekResult = (gameweek) => {

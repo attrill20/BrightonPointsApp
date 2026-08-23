@@ -71,7 +71,7 @@ export async function getUserByUsername(username) {
 
 // ============ CAPTAIN SELECTIONS ============
 
-export async function setCaptain(userId, gameweek, playerId) {
+export async function setCaptain(userId, gameweek, playerId, season) {
   try {
     const { data, error } = await supabase
       .from('captain_selections')
@@ -79,10 +79,11 @@ export async function setCaptain(userId, gameweek, playerId) {
         {
           user_id: userId,
           gameweek,
+          season,
           player_id: playerId,
           selected_at: new Date().toISOString()
         },
-        { onConflict: 'user_id,gameweek' }
+        { onConflict: 'user_id,gameweek,season' }
       )
       .select()
       .single();
@@ -112,12 +113,13 @@ export async function getCaptain(userId, gameweek) {
   }
 }
 
-export async function getAllCaptains(userId) {
+export async function getAllCaptains(userId, season) {
   try {
     const { data, error } = await supabase
       .from('captain_selections')
       .select('gameweek, player_id')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .eq('season', season);
 
     if (error) throw error;
 
@@ -136,17 +138,18 @@ export async function getAllCaptains(userId) {
 
 // ============ MULTIPLIER OVERRIDES ============
 
-export async function setMultiplierOverride(gameweek, multiplier) {
+export async function setMultiplierOverride(gameweek, multiplier, season) {
   try {
     const { data, error } = await supabase
       .from('multiplier_overrides')
       .upsert(
         {
           gameweek,
+          season,
           multiplier,
           updated_at: new Date().toISOString()
         },
-        { onConflict: 'gameweek' }
+        { onConflict: 'gameweek,season' }
       )
       .select()
       .single();
@@ -175,12 +178,13 @@ export async function getMultiplierOverride(gameweek) {
   }
 }
 
-export async function clearMultiplierOverride(gameweek) {
+export async function clearMultiplierOverride(gameweek, season) {
   try {
     const { error } = await supabase
       .from('multiplier_overrides')
       .delete()
-      .eq('gameweek', gameweek);
+      .eq('gameweek', gameweek)
+      .eq('season', season);
 
     if (error) throw error;
     return { success: true };
@@ -190,11 +194,12 @@ export async function clearMultiplierOverride(gameweek) {
   }
 }
 
-export async function getAllMultiplierOverrides() {
+export async function getAllMultiplierOverrides(season) {
   try {
     const { data, error } = await supabase
       .from('multiplier_overrides')
-      .select('gameweek, multiplier');
+      .select('gameweek, multiplier')
+      .eq('season', season);
 
     if (error) throw error;
 
@@ -212,17 +217,18 @@ export async function getAllMultiplierOverrides() {
 
 // ============ QUALIFYING GAMES ============
 
-export async function setQualifyingGame(gameweek, isQualifying) {
+export async function setQualifyingGame(gameweek, isQualifying, season) {
   try {
     const { data, error } = await supabase
       .from('qualifying_games')
       .upsert(
         {
           gameweek,
+          season,
           is_qualifying: isQualifying,
           updated_at: new Date().toISOString()
         },
-        { onConflict: 'gameweek' }
+        { onConflict: 'gameweek,season' }
       )
       .select()
       .single();
@@ -251,11 +257,12 @@ export async function isQualifyingGame(gameweek) {
   }
 }
 
-export async function getAllQualifyingGames() {
+export async function getAllQualifyingGames(season) {
   try {
     const { data, error } = await supabase
       .from('qualifying_games')
-      .select('gameweek, is_qualifying');
+      .select('gameweek, is_qualifying')
+      .eq('season', season);
 
     if (error) throw error;
 
@@ -273,12 +280,13 @@ export async function getAllQualifyingGames() {
 
 // ============ PLAYER ASSIGNMENTS ============
 
-export async function getAllPlayerAssignments(userId) {
+export async function getAllPlayerAssignments(userId, season) {
   try {
     const { data, error } = await supabase
       .from('player_assignments')
       .select('player_name, starting_gameweek, ending_gameweek')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .eq('season', season);
 
     if (error) throw error;
 
@@ -293,7 +301,7 @@ export async function getAllPlayerAssignments(userId) {
   }
 }
 
-export async function addPlayerAssignment(userId, playerName, startingGameweek) {
+export async function addPlayerAssignment(userId, playerName, startingGameweek, season) {
   try {
     const { data, error } = await supabase
       .from('player_assignments')
@@ -301,7 +309,8 @@ export async function addPlayerAssignment(userId, playerName, startingGameweek) 
         user_id: userId,
         player_name: playerName,
         starting_gameweek: startingGameweek,
-        ending_gameweek: 99
+        ending_gameweek: 99,
+        season
       }])
       .select()
       .single();
@@ -314,7 +323,7 @@ export async function addPlayerAssignment(userId, playerName, startingGameweek) 
   }
 }
 
-export async function removePlayerAssignment(userId, playerName, activeGameweek) {
+export async function removePlayerAssignment(userId, playerName, activeGameweek, season) {
   try {
     const { data, error } = await supabase
       .from('player_assignments')
@@ -322,6 +331,7 @@ export async function removePlayerAssignment(userId, playerName, activeGameweek)
       .eq('user_id', userId)
       .eq('player_name', playerName)
       .eq('ending_gameweek', 99)
+      .eq('season', season)
       .select()
       .single();
 
@@ -335,7 +345,7 @@ export async function removePlayerAssignment(userId, playerName, activeGameweek)
 
 // ============ GAMEWEEK RESULTS ============
 
-export async function saveGameweekResult(gameweek, jamesPoints, lauriePoints, multiplier) {
+export async function saveGameweekResult(gameweek, jamesPoints, lauriePoints, multiplier, season) {
   try {
     const difference = Math.abs(jamesPoints - lauriePoints) * multiplier;
     const jamesPaid = jamesPoints < lauriePoints ? difference : 0;
@@ -346,6 +356,7 @@ export async function saveGameweekResult(gameweek, jamesPoints, lauriePoints, mu
       .upsert(
         {
           gameweek,
+          season,
           james_points: jamesPoints,
           laurie_points: lauriePoints,
           multiplier,
@@ -354,7 +365,7 @@ export async function saveGameweekResult(gameweek, jamesPoints, lauriePoints, mu
           laurie_paid: lauriePaid,
           updated_at: new Date().toISOString()
         },
-        { onConflict: 'gameweek' }
+        { onConflict: 'gameweek,season' }
       )
       .select()
       .single();
@@ -383,11 +394,12 @@ export async function getGameweekResult(gameweek) {
   }
 }
 
-export async function getAllGameweekResults() {
+export async function getAllGameweekResults(season) {
   try {
     const { data, error } = await supabase
       .from('gameweek_results')
-      .select('*');
+      .select('*')
+      .eq('season', season);
 
     if (error) throw error;
 
